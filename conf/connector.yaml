@@ -1,0 +1,23 @@
+connectors:
+  - name: Wonder Registry
+    type: postgres
+    host: 10.0.0.1
+    port: 5439
+    username: readonly_all
+    password: 12345678
+    database: wonder_registry
+  - name: Treasury Services
+    type: postgres
+    host: 192.168.0.1
+    port: 5439
+    username: cdc_account
+    password: 1234567
+    database: treasury_services
+  - name: Payment Gateway
+    type: mysql
+    host: 192.168.0.2
+    port: 3306
+    username: aaa
+    password: aaaa
+    database: payment_gateway
+

@@ -1,0 +1,10 @@
+name: Payment Gateway To StarRocks
+reader:
+  - connector_name: Payment Gateway
+    tables:
+      - pg2_txn_record
+      - xxxxxx
+      - xxxx
+      - xxx
+writers:
+  - connector_name: Star Rocks
