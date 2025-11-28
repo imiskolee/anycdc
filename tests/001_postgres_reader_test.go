@@ -3,7 +3,7 @@ package tests
 import (
 	"bindolabs/anycdc/pkg/config"
 	"bindolabs/anycdc/pkg/event"
-	"bindolabs/anycdc/pkg/readers"
+	"bindolabs/anycdc/pkg/reader"
 	"bindolabs/anycdc/pkg/state"
 	"fmt"
 	uuid "github.com/satori/go.uuid"
@@ -26,16 +26,16 @@ type PGTestTable struct {
 	DeletedAt   *time.Time      `gorm:"column:deleted_at"`
 }
 
+func (s *PGTestTable) TableName() string {
+	return "table_1"
+}
+
 type Subscriber struct {
 }
 
 func (s *Subscriber) Consume(event event.Event) error {
 	log.Println("New Event Coming", event)
 	return nil
-}
-
-func (s *PGTestTable) TableName() string {
-	return "table_1"
 }
 
 func TestBasicConnection(t *testing.T) {
@@ -51,18 +51,18 @@ func TestBasicConnection(t *testing.T) {
 		},
 	}
 
-	reader := config.Reader{
+	r := config.Reader{
 		Connector: "db",
 		Tables: []string{
 			"table_1",
 		},
 		Extras: map[string]string{
-			readers.PostgresExtraSlotName:        "anycdc_slot_1",
-			readers.PostgresExtraPublicationName: "anycdc_publication_1",
+			reader.PostgresExtraSlotName:        "anycdc_slot_1",
+			reader.PostgresExtraPublicationName: "anycdc_publication_1",
 		},
 	}
 
-	pgReader := readers.NewPostgresReader(reader, readers.ReaderOptions{
+	pgReader := reader.NewPostgresReader(r, reader.ReaderOptions{
 		Subscriber:  &Subscriber{},
 		StateLoader: state.NewState("001_postgres_reader_test"),
 	})
@@ -91,7 +91,7 @@ func TestBasicConnection(t *testing.T) {
 	db.AutoMigrate(&PGTestTable{})
 
 	{
-		for i := 0; i < 1; i++ {
+		for i := 0; i < 10; i++ {
 			record := &PGTestTable{
 				UUID:        uuid.NewV4().String(),
 				Name:        fmt.Sprintf("name_%d", i),
@@ -103,7 +103,7 @@ func TestBasicConnection(t *testing.T) {
 			}
 			db.Create(record)
 			record.Description = fmt.Sprintf("after_changed_%d", i)
-			//db.Save(record)
+			db.Save(record)
 		}
 	}
 

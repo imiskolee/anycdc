@@ -11,9 +11,9 @@ type Writer struct {
 }
 
 type Task struct {
+	Name      string   `yaml:"name"`
 	Reader    Reader   `yaml:"reader"`
 	Writers   []Writer `yaml:"writers"`
-	Tables    []string `yaml:"tables"`
 	Interval  int      `yaml:"interval"`
 	QueueSize int      `yaml:"queue_size"`
 }
