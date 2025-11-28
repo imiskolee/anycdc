@@ -1,0 +1,19 @@
+package config
+
+type ConnectorType string
+
+const (
+	ConnectorTypeMySQL     ConnectorType = "mysql"
+	ConnectorTypePostgres  ConnectorType = "postgres"
+	ConnectorTypeStarRocks ConnectorType = "star_rocks"
+)
+
+type Connector struct {
+	Type     ConnectorType     `yaml:"type"`
+	Host     string            `yaml:"host"`
+	Port     int               `yaml:"port"`
+	Username string            `yaml:"username"`
+	Password string            `yaml:"password"`
+	Database string            `yaml:"database"`
+	Extras   map[string]string `yaml:"extras"`
+}
