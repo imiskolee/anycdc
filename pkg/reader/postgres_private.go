@@ -29,6 +29,7 @@ func (s *PostgresReader) connect() {
 		panic(err)
 	}
 	config.RuntimeParams["replication"] = "database"
+	config.TLSConfig = nil
 	config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 	conn, err := pgx.ConnectConfig(s.ctx, config)
 	if err != nil {
