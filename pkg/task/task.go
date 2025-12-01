@@ -26,12 +26,13 @@ func (t *Task) Prepare() error {
 		Subscriber:  t,
 		StateLoader: state.NewState(t.conf.Name),
 	})
-	_ = r.Prepare()
+	if err := r.Prepare(); err != nil {
+		return err
+	}
 	t.reader = r
 	t.writers = make([]writer.Writer, 0)
 	for _, w := range t.conf.Writers {
-		c, _ := config.GetConnector(w.Connector)
-		wr := writer.NewWriter(c)
+		wr := writer.NewWriter(w)
 		err := wr.Prepare()
 		if err != nil {
 			panic(err)

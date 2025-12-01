@@ -1,0 +1,29 @@
+connectors:
+  - alias: test_pg_1
+    type: postgres
+    host: 127.0.0.1
+    port: 15432
+    username: root
+    password: anycdc
+    database: anycdc_test
+  - alias: test_pg_2
+    type: postgres
+    host: 127.0.0.1
+    port: 15433
+    username: root
+    password: anycdc
+    database: anycdc_test
+  - alias: test_mysql_1
+    type: mysql
+    host: 127.0.0.1
+    port: 13306
+    username: root
+    password: anycdc
+    database: anycdc_test
+  - alias: test_mysql_2
+    type: postgres
+    host: 127.0.0.1
+    port: 13307
+    username: root
+    password: anycdc
+    database: anycdc_test

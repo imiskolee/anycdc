@@ -23,6 +23,10 @@ type PostgresReader struct {
 	typeMap       *pgtype.Map
 }
 
+func registerTypes(typ *pgtype.Map) {
+
+}
+
 func NewPostgresReader(conf config.Reader, options ReaderOptions) *PostgresReader {
 	return &PostgresReader{
 		conf:      conf,

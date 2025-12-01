@@ -1,20 +1,11 @@
 # sync all tables from reader.connector to writers.connector(2 destinations)
-name: <task_name>
+name: pg_to_mysql_1
 reader:
-  connector: <connector_name>
+  connector: test_pg_1
+  extras:
+    publication_name: test_pg_1_publication
+    slot_name: test_pg_1_slot
   tables:
-    - table_1
-    - table_2
-    - sub_table_*
-    - *
+    - field_types
 writers:
-  - connector: <connector_1_name>
-    destination_table_rule:
-      - prefix: prefix_ #add prefix_ to table name on destination.
-      - suffix: _suffix #add _suffix to table name on destination.
-    schema_check_rule: strict # strict means reader table schema need match to destination table scheme.
-  - connector: <connector_2_name>
-
-flush_rule:
-  interval: 10s #focus trigger writer(s) if now - last trigger > flush_rule.interval
-  batch_size: 100 # 100 records a batch
+  - connector: test_mysql_1

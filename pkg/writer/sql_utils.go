@@ -3,20 +3,21 @@ package writer
 import (
 	"bindolabs/anycdc/pkg/event"
 	"fmt"
+	"log"
 	"strings"
 )
 
-func EventToSQL(e event.Event) (string, []interface{}) {
+func EventToSQL(e event.Event, fieldWrapper string) (string, []interface{}) {
 	switch e.Type {
 	case event.TypeInsert:
-		return insertEventToSQL(e)
+		return insertEventToSQL(e, fieldWrapper)
 	case event.TypeUpdate:
-		return updateEventToSQL(e)
+		return updateEventToSQL(e, fieldWrapper)
 	}
 	return "", nil
 }
 
-func insertEventToSQL(event event.Event) (string, []interface{}) {
+func insertEventToSQL(event event.Event, fieldWrapper string) (string, []interface{}) {
 	if len(event.Payload) == 0 {
 		return "", nil
 	}
@@ -27,28 +28,44 @@ func insertEventToSQL(event event.Event) (string, []interface{}) {
 	updateClauses := make([]string, 0, len(event.Payload)-1)
 	updateValues := make([]interface{}, 0, len(event.Payload)-1)
 	for col, val := range event.Payload {
-		columns = append(columns, col)
+		columns = append(columns, fmt.Sprintf("%s%s%s", fieldWrapper, col, fieldWrapper))
 		values = append(values, val)
 		if col != event.PrimaryKey {
-			updateClauses = append(updateClauses, fmt.Sprintf("`%s` = ?", col))
+			updateClauses = append(updateClauses, fmt.Sprintf("%s%s%s = ?", fieldWrapper, col, fieldWrapper))
 			updateValues = append(updateValues, val)
 		}
 	}
 
+	quotes := make([]string, 0, len(columns))
+	for i := 0; i < len(columns); i++ {
+		quotes = append(quotes, "?")
+	}
+	// ON CONFLICT (field_uuid) DO UPDATE SET
+	// ON DUPLICATE KEY UPDATE
+
+	duplicateStagement := "ON DUPLICATE KEY UPDATE"
+
+	if fieldWrapper == "\"" {
+		duplicateStagement = fmt.Sprintf("ON CONFLICT (\"%s\") DO UPDATE SET", event.PrimaryKey)
+	}
+
 	// 拼接 SQL
 	insertSQL := fmt.Sprintf(
-		"INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+		"INSERT INTO %s%s%s (%s) VALUES (%s) %s %s",
+		fieldWrapper,
 		event.Table,
+		fieldWrapper,
 		strings.Join(columns, ", "),
-		strings.Repeat("?, ", len(values))[:len(values)*2-2], // 生成 "?, ?, ..."
+		strings.Join(quotes, ", "),
+		duplicateStagement,
 		strings.Join(updateClauses, ", "),
 	)
 	params := append(values, updateValues...)
-
+	log.Println("SQL=", insertSQL)
 	return insertSQL, params
 }
 
-func updateEventToSQL(event event.Event) (string, []interface{}) {
+func updateEventToSQL(event event.Event, fieldWrapper string) (string, []interface{}) {
 
 	if len(event.Payload) == 0 {
 		return "", nil
@@ -61,16 +78,16 @@ func updateEventToSQL(event event.Event) (string, []interface{}) {
 		if col == event.PrimaryKey {
 			continue
 		}
-		setClauses = append(setClauses, fmt.Sprintf("`%s` = ?", col)) // 字段加反引号避免关键字冲突
+		setClauses = append(setClauses, fmt.Sprintf("%s%s%s = ?", fieldWrapper, col, fieldWrapper)) // 字段加反引号避免关键字冲突
 		params = append(params, val)
 	}
 
-	whereClauses := fmt.Sprintf("%s = ?", event.PrimaryKey)
+	whereClauses := fmt.Sprintf("%s%s%s = ?", fieldWrapper, event.PrimaryKey, fieldWrapper)
 	params = append(params, event.PrimaryKeyValue)
 
 	updateSQL := fmt.Sprintf(
-		"UPDATE `%s` SET %s WHERE %s",
-		event.Table,
+		"UPDATE %s%s%s SET %s WHERE %s",
+		fieldWrapper, event.Table, fieldWrapper,
 		strings.Join(setClauses, ", "),
 		whereClauses,
 	)

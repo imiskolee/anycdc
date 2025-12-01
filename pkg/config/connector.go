@@ -10,6 +10,7 @@ const (
 
 type Connector struct {
 	Type     ConnectorType     `yaml:"type"`
+	Alias    string            `yaml:"alias"`
 	Host     string            `yaml:"host"`
 	Port     int               `yaml:"port"`
 	Username string            `yaml:"username"`

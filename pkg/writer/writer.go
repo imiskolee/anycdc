@@ -10,10 +10,13 @@ type Writer interface {
 	Execute(event event.Event) error
 }
 
-func NewWriter(conf config.Connector) Writer {
-	switch conf.Type {
-	case config.ConnectorTypeMySQL, config.ConnectorTypePostgres:
-		return NewGormWriter(conf)
+func NewWriter(conf config.Writer) Writer {
+	connector, _ := config.GetConnector(conf.Connector)
+	switch connector.Type {
+	case config.ConnectorTypeMySQL:
+		return NewMySQLWriter(conf)
+	case config.ConnectorTypePostgres:
+		return NewPostgresWriter(conf)
 	}
-	panic("Unsupported connector type: " + conf.Type)
+	panic("Unsupported connector type: " + connector.Type)
 }

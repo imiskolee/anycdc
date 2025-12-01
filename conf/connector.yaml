@@ -1,8 +1,0 @@
-connectors:
-  - name: <alias name>
-    type: postgres
-    host: <db host>
-    port: <db port>
-    username: <db_name>
-    password: <db_password>
-    database: <db_name>

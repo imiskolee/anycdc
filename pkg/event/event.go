@@ -9,3 +9,15 @@ type Event struct {
 	State           string
 	Payload         map[string]interface{}
 }
+
+func (e Event) Copy() Event {
+	return Event{
+		Type:            e.Type,
+		Schema:          e.Schema,
+		Table:           e.Table,
+		PrimaryKey:      e.PrimaryKey,
+		PrimaryKeyValue: e.PrimaryKeyValue,
+		State:           e.State,
+		Payload:         e.Payload,
+	}
+}

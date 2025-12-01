@@ -60,9 +60,9 @@ func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) {
 		}
 		break
 	case *pglogrepl.UpdateMessageV2:
+		fmt.Println("Updated", logicalMsg)
 		rel := s.relations[logicalMsg.RelationID]
 		pk := getPrimaryKey(rel)
-		fmt.Println(logicalMsg.OldTuple)
 		newData := s.convertDataMap(logicalMsg.RelationID, logicalMsg.NewTuple.Columns)
 		oldData := newData
 		if logicalMsg.OldTuple != nil {
@@ -128,6 +128,9 @@ func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.
 
 func decodeTextColumnData(mi *pgtype.Map, data []byte, dataType uint32) (interface{}, error) {
 	if dt, ok := mi.TypeForOID(dataType); ok {
+		if dataType == pgtype.UUIDOID {
+			return string(data), nil
+		}
 		return dt.Codec.DecodeValue(mi, dataType, pgtype.TextFormatCode, data)
 	}
 	return string(data), nil
