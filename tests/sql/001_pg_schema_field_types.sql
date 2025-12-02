@@ -1,3 +1,4 @@
+DROP table field_types;
 CREATE TABLE IF NOT EXISTS field_types (
                                            field_uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                            field_smallint SMALLINT,                      -- 2字节整数 (-32768 至 32767)

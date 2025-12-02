@@ -27,6 +27,6 @@ INSERT INTO field_types ("field_uuid","field_smallint",
              1764569614000,
              true
          );
-update field_types set "field_smallint" = 1,field_char = 'new_value' where "field_uuid" = '00000000-0000-0000-0000-000000001';
+update field_types set "field_smallint" = 1,field_char = 'new_value',field_json = '{"key":"value"}' where "field_uuid" = '00000000-0000-0000-0000-000000001';
 
 delete field_types where "field_uuid" = '00000000-0000-0000-0000-000000002';

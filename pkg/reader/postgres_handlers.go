@@ -128,7 +128,7 @@ func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.
 
 func decodeTextColumnData(mi *pgtype.Map, data []byte, dataType uint32) (interface{}, error) {
 	if dt, ok := mi.TypeForOID(dataType); ok {
-		if dataType == pgtype.UUIDOID {
+		if dataType == pgtype.UUIDOID || dataType == pgtype.JSONOID {
 			return string(data), nil
 		}
 		return dt.Codec.DecodeValue(mi, dataType, pgtype.TextFormatCode, data)

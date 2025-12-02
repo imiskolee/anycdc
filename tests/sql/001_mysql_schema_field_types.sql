@@ -1,3 +1,4 @@
+DROP table field_types;
 CREATE TABLE IF NOT EXISTS field_types (
     -- 主键：UUID 类型（MySQL 8.0+ 原生支持 UUID，低版本需用 VARCHAR(36) 模拟）
                                            field_uuid CHAR(36) PRIMARY KEY DEFAULT (UUID()),
