@@ -6,8 +6,6 @@ import (
 	"bindolabs/anycdc/pkg/state"
 )
 
-type BatchEventSubscriber func(batch event.Batch) error
-
 type Subscriber interface {
 	Consume(event event.Event) error
 }
@@ -25,9 +23,9 @@ type Reader interface {
 
 func NewReader(conf config.Reader, opt *ReaderOptions) Reader {
 	connector, _ := config.GetConnector(conf.Connector)
-	switch connector.Type {
-	case config.ConnectorTypePostgres:
-		return NewPostgresReader(conf, *opt)
+	factory, ok := _readers[connector.Type]
+	if !ok {
+		panic("invalid connector type")
 	}
-	panic("invalid connector type")
+	return factory(conf, opt)
 }

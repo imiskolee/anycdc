@@ -22,7 +22,6 @@ func insertEventToSQL(event event.Event, fieldWrapper string) (string, []interfa
 	if len(event.Payload) == 0 {
 		return "", nil
 	}
-
 	// 提取字段名和值
 	columns := make([]string, 0, len(event.Payload))
 	values := make([]interface{}, 0, len(event.Payload))

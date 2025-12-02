@@ -1,7 +1,8 @@
-package reader
+package postgres
 
 import (
 	"bindolabs/anycdc/pkg/config"
+	"bindolabs/anycdc/pkg/reader"
 	"context"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
@@ -13,11 +14,15 @@ const (
 	PostgresExtraSlotName        = "slot_name"
 )
 
+func init() {
+	reader.Register(config.ConnectorTypePostgres, NewPostgresReader)
+}
+
 type PostgresReader struct {
 	conf          config.Reader
 	ctx           context.Context
 	conn          *pgx.Conn
-	opt           ReaderOptions
+	opt           reader.ReaderOptions
 	clientXLogPos pglogrepl.LSN
 	relations     map[uint32]pglogrepl.RelationMessageV2
 	typeMap       *pgtype.Map
@@ -27,11 +32,11 @@ func registerTypes(typ *pgtype.Map) {
 
 }
 
-func NewPostgresReader(conf config.Reader, options ReaderOptions) *PostgresReader {
+func NewPostgresReader(conf config.Reader, options *reader.ReaderOptions) reader.Reader {
 	return &PostgresReader{
 		conf:      conf,
 		ctx:       context.Background(),
-		opt:       options,
+		opt:       *options,
 		relations: map[uint32]pglogrepl.RelationMessageV2{},
 		typeMap:   pgtype.NewMap(),
 	}

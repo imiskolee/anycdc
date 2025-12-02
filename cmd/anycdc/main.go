@@ -5,6 +5,10 @@ import (
 	"bindolabs/anycdc/pkg/task"
 	"flag"
 	"sync"
+
+	_ "bindolabs/anycdc/pkg/reader/postgres"
+	_ "bindolabs/anycdc/pkg/writer/mysql"
+	_ "bindolabs/anycdc/pkg/writer/postgres"
 )
 
 func main() {

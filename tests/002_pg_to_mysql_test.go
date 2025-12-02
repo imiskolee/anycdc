@@ -2,7 +2,7 @@ package tests
 
 import (
 	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/reader"
+	"bindolabs/anycdc/pkg/reader/postgres"
 	"bindolabs/anycdc/pkg/task"
 	"bindolabs/anycdc/pkg/writer"
 	"fmt"
@@ -41,8 +41,8 @@ func TestPGToMySQL(t *testing.T) {
 				"table_1",
 			},
 			Extras: map[string]string{
-				reader.PostgresExtraSlotName:        "anycdc_slot_2",
-				reader.PostgresExtraPublicationName: "anycdc_publication_2",
+				postgres.PostgresExtraSlotName:        "anycdc_slot_2",
+				postgres.PostgresExtraPublicationName: "anycdc_publication_2",
 			},
 		},
 		Writers: []config.Writer{

@@ -1,4 +1,4 @@
-package reader
+package postgres
 
 import (
 	"bindolabs/anycdc/pkg/config"

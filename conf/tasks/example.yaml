@@ -9,3 +9,4 @@ reader:
     - field_types
 writers:
   - connector: test_mysql_1
+  - connector: test_pg_2

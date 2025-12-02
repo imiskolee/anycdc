@@ -1,8 +1,11 @@
-package writer
+package postgres
 
 import (
 	"bindolabs/anycdc/pkg/config"
+	"bindolabs/anycdc/pkg/entry"
 	"bindolabs/anycdc/pkg/event"
+	"bindolabs/anycdc/pkg/writer"
+	"bindolabs/anycdc/pkg/writer/common_rds"
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,14 +17,19 @@ import (
 
 type PostgresWriter struct {
 	conf    config.Writer
-	schemas map[string]SimpleTableSchema
+	schemas map[string]writer.SimpleTableSchema
 	mutex   sync.Mutex
 	conn    *gorm.DB
 }
 
-func NewPostgresWriter(conf config.Writer) *PostgresWriter {
+func init() {
+	writer.Register(config.ConnectorTypePostgres, NewPostgresWriter)
+}
+
+func NewPostgresWriter(conf config.Writer) writer.Writer {
 	return &PostgresWriter{
-		conf: conf,
+		conf:    conf,
+		schemas: make(map[string]writer.SimpleTableSchema),
 	}
 }
 
@@ -50,12 +58,14 @@ func (s *PostgresWriter) Execute(event event.Event) error {
 	}
 	schema := s.schemas[event.Table]
 	newEvent := event.Copy()
+	newEvent.PrimaryKeyValue, _ = common_rds.ConvertBuiltInTypedData(newEvent.PrimaryKeyValue.(entry.TypedData))
+	newEvent.Payload = common_rds.Convert(newEvent.Payload)
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
-	sql, params := EventToSQL(newEvent, "\"")
+	sql, params := writer.EventToSQL(newEvent, "\"")
 	return s.conn.Exec(sql, params...).Error
 }
 
-func (s *PostgresWriter) syncSchema(tableName string) (SimpleTableSchema, error) {
+func (s *PostgresWriter) syncSchema(tableName string) (writer.SimpleTableSchema, error) {
 	sql := `
 SELECT
   a.attname AS column_name,
@@ -77,15 +87,15 @@ ORDER BY a.attnum;
 	}
 	if err := s.conn.Raw(sql, tableName).Scan(&fields).Error; err != nil {
 		log.Println("Unable get information schema columns:", err.Error())
-		return SimpleTableSchema{}, err
+		return writer.SimpleTableSchema{}, err
 	}
 
-	schema := SimpleTableSchema{
+	schema := writer.SimpleTableSchema{
 		Name:       tableName,
 		LastSyncAt: time.Now(),
 	}
 	for _, field := range fields {
-		schema.Fields = append(schema.Fields, SimpleField{
+		schema.Fields = append(schema.Fields, writer.SimpleField{
 			Name: field.ColumnName,
 		})
 	}

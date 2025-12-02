@@ -4,6 +4,7 @@ import (
 	"bindolabs/anycdc/pkg/config"
 	"bindolabs/anycdc/pkg/event"
 	"bindolabs/anycdc/pkg/reader"
+	postgres2 "bindolabs/anycdc/pkg/reader/postgres"
 	"bindolabs/anycdc/pkg/state"
 	"fmt"
 	uuid "github.com/satori/go.uuid"
@@ -57,12 +58,12 @@ func TestBasicConnection(t *testing.T) {
 			"table_1",
 		},
 		Extras: map[string]string{
-			reader.PostgresExtraSlotName:        "anycdc_slot_1",
-			reader.PostgresExtraPublicationName: "anycdc_publication_1",
+			postgres2.PostgresExtraSlotName:        "anycdc_slot_1",
+			postgres2.PostgresExtraPublicationName: "anycdc_publication_1",
 		},
 	}
 
-	pgReader := reader.NewPostgresReader(r, reader.ReaderOptions{
+	pgReader := postgres2.NewPostgresReader(r, reader.ReaderOptions{
 		Subscriber:  &Subscriber{},
 		StateLoader: state.NewState("001_postgres_reader_test"),
 	})

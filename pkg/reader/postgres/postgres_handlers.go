@@ -1,11 +1,10 @@
-package reader
+package postgres
 
 import (
 	"bindolabs/anycdc/pkg/event"
 	"fmt"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
-	"github.com/jackc/pgx/v5/pgtype"
 	"log"
 )
 
@@ -24,13 +23,15 @@ func (s *PostgresReader) handler(msg pgproto3.BackendMessage) {
 }
 
 func (s *PostgresReader) handlePrimaryKeepaliveMessage(msg *pgproto3.CopyData) {
-	pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
-	if err != nil {
-		log.Fatalln("ParsePrimaryKeepaliveMessage failed:", err)
-	}
-	if pkm.ServerWALEnd > s.clientXLogPos {
-		s.clientXLogPos = pkm.ServerWALEnd
-	}
+	/*
+		pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
+		if err != nil {
+			log.Fatalln("ParsePrimaryKeepaliveMessage failed:", err)
+		}
+		if pkm.ServerWALEnd > s.clientXLogPos {
+			s.clientXLogPos = pkm.ServerWALEnd
+		}
+	*/
 }
 
 func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) {
@@ -112,9 +113,9 @@ func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.
 		colName := rel.Columns[idx].Name
 		switch col.DataType {
 		case pglogrepl.TupleDataTypeToast, pglogrepl.TupleDataTypeText:
-			val, err := decodeTextColumnData(s.typeMap, col.Data, rel.Columns[idx].DataType)
+			val, err := convertToTypedData(s.typeMap, rel.Columns[idx].DataType, col.Data)
 			if err != nil {
-				log.Fatalln("error decoding column data:", err)
+				panic(err)
 			}
 			values[colName] = val
 			break
@@ -124,16 +125,6 @@ func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.
 		}
 	}
 	return values
-}
-
-func decodeTextColumnData(mi *pgtype.Map, data []byte, dataType uint32) (interface{}, error) {
-	if dt, ok := mi.TypeForOID(dataType); ok {
-		if dataType == pgtype.UUIDOID || dataType == pgtype.JSONOID {
-			return string(data), nil
-		}
-		return dt.Codec.DecodeValue(mi, dataType, pgtype.TextFormatCode, data)
-	}
-	return string(data), nil
 }
 
 func getPrimaryKey(rel pglogrepl.RelationMessageV2) string {

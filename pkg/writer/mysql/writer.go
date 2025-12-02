@@ -1,8 +1,11 @@
-package writer
+package mysql
 
 import (
 	"bindolabs/anycdc/pkg/config"
+	"bindolabs/anycdc/pkg/entry"
 	"bindolabs/anycdc/pkg/event"
+	"bindolabs/anycdc/pkg/writer"
+	"bindolabs/anycdc/pkg/writer/common_rds"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -12,17 +15,21 @@ import (
 	"time"
 )
 
+func init() {
+	writer.Register(config.ConnectorTypeMySQL, NewMySQLWriter)
+}
+
 type MySQLWriter struct {
 	conf    config.Writer
-	schemas map[string]SimpleTableSchema
+	schemas map[string]writer.SimpleTableSchema
 	mutex   sync.Mutex
 	conn    *gorm.DB
 }
 
-func NewMySQLWriter(conf config.Writer) *MySQLWriter {
+func NewMySQLWriter(conf config.Writer) writer.Writer {
 	return &MySQLWriter{
 		conf:    conf,
-		schemas: make(map[string]SimpleTableSchema),
+		schemas: make(map[string]writer.SimpleTableSchema),
 	}
 }
 
@@ -51,12 +58,14 @@ func (s *MySQLWriter) Execute(event event.Event) error {
 	}
 	schema := s.schemas[event.Table]
 	newEvent := event.Copy()
+	newEvent.Payload = common_rds.Convert(newEvent.Payload)
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
-	sql, params := EventToSQL(event, "`")
+	newEvent.PrimaryKeyValue, _ = common_rds.ConvertBuiltInTypedData(newEvent.PrimaryKeyValue.(entry.TypedData))
+	sql, params := writer.EventToSQL(newEvent, "`")
 	return s.conn.Exec(sql, params...).Error
 }
 
-func (s *MySQLWriter) syncSchema(tableName string) (SimpleTableSchema, error) {
+func (s *MySQLWriter) syncSchema(tableName string) (writer.SimpleTableSchema, error) {
 	connector, _ := config.GetConnector(s.conf.Connector)
 	sql := `SELECT 
   		COLUMN_NAME column_name,
@@ -70,15 +79,15 @@ func (s *MySQLWriter) syncSchema(tableName string) (SimpleTableSchema, error) {
 	}
 	if err := s.conn.Raw(sql, connector.Database, tableName).Scan(&fields).Error; err != nil {
 		log.Println("Unable get information schema columns:", err.Error())
-		return SimpleTableSchema{}, err
+		return writer.SimpleTableSchema{}, err
 	}
 
-	schema := SimpleTableSchema{
+	schema := writer.SimpleTableSchema{
 		Name:       tableName,
 		LastSyncAt: time.Now(),
 	}
 	for _, field := range fields {
-		schema.Fields = append(schema.Fields, SimpleField{
+		schema.Fields = append(schema.Fields, writer.SimpleField{
 			Name: field.ColumnName,
 		})
 	}
