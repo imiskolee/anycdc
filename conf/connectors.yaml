@@ -21,7 +21,7 @@ connectors:
     password: anycdc
     database: anycdc_test
   - alias: test_mysql_2
-    type: postgres
+    type: mysql
     host: 127.0.0.1
     port: 13307
     username: root

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"sync"
 
+	_ "bindolabs/anycdc/pkg/reader/mysql"
 	_ "bindolabs/anycdc/pkg/reader/postgres"
 	_ "bindolabs/anycdc/pkg/writer/mysql"
 	_ "bindolabs/anycdc/pkg/writer/postgres"

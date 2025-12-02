@@ -1,11 +1,11 @@
-package writer
+package schema
 
 import "time"
 
-const ()
-
 type SimpleField struct {
-	Name string
+	Index        uint
+	Name         string
+	IsPrimaryKey bool
 }
 
 type SimpleTableSchema struct {
@@ -27,4 +27,23 @@ func (s *SimpleTableSchema) ConvertRecord(data map[string]interface{}) map[strin
 		newRecord[key] = value
 	}
 	return newRecord
+}
+
+func (s *SimpleTableSchema) GetFieldByIndex(idx uint) (SimpleField, bool) {
+	for _, f := range s.Fields {
+		if idx == f.Index {
+			return f, true
+		}
+	}
+	return SimpleField{}, false
+}
+
+func (s *SimpleTableSchema) GetPrimaryKeys() []string {
+	var keys []string
+	for _, f := range s.Fields {
+		if f.IsPrimaryKey {
+			keys = append(keys, f.Name)
+		}
+	}
+	return keys
 }
