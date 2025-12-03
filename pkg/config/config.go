@@ -54,6 +54,7 @@ func Parse(dir string) {
 		}
 		G.Connectors[v.Alias] = v
 	}
+	taskMap := make(map[string]bool)
 	_ = filepath.Walk(path.Join(dir, "tasks"), func(path string, info os.FileInfo, err error) error {
 		var task Task
 		if !strings.HasSuffix(path, ".yaml") {
@@ -62,10 +63,13 @@ func Parse(dir string) {
 		if err := loadYaml(path, &task); err != nil {
 			panic("Can not load " + (path) + ", reason: " + err.Error())
 		}
+		if _, ok := taskMap[task.Name]; ok {
+			panic("Duplicated task:" + task.Name)
+		}
+		taskMap[task.Name] = true
 		G.Tasks = append(G.Tasks, task)
 		return nil
 	})
-
 }
 
 func loadYaml(file string, v interface{}) error {
