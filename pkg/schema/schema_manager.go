@@ -34,5 +34,5 @@ func (m *Manager) GetTable(schema string, name string) (SimpleTableSchema, error
 			lastSyncAt: time.Now(),
 		}
 	}
-	return table.schema, nil
+	return m.tables[fullKey].schema, nil
 }

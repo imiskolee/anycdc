@@ -4,6 +4,7 @@ import (
 	"bindolabs/anycdc/pkg/config"
 	"bindolabs/anycdc/pkg/reader"
 	"context"
+	"encoding/json"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -53,4 +54,9 @@ func (s *PostgresReader) Start() error {
 
 func (s *PostgresReader) Stop() error {
 	return nil
+}
+
+func (s *PostgresReader) Save() error {
+	j, _ := json.Marshal(s.clientXLogPos)
+	return s.opt.StateLoader.Save(string(j))
 }

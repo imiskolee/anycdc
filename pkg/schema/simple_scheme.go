@@ -4,6 +4,7 @@ import "time"
 
 type SimpleField struct {
 	Index        uint
+	Type         string
 	Name         string
 	IsPrimaryKey bool
 }

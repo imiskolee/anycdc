@@ -3,12 +3,12 @@ package postgres
 import (
 	"bindolabs/anycdc/pkg/config"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -54,10 +54,15 @@ func (s *PostgresReader) prepare() error {
 		if err != nil {
 			return err
 		}
+	} else {
+		var currentLSN pglogrepl.LSN
+		query := `select received_lsn from pg_stat_replication where pubname = $1`
+		row := s.conn.QueryRow(s.ctx, query, s.conf.Extras[PostgresExtraPublicationName])
+		row.Scan(&currentLSN)
+		s.clientXLogPos = currentLSN
 	}
 
 	currentTables, err := getPublicationTables(s.ctx, s.conn, s.conf.Extras[PostgresExtraPublicationName])
-	log.Println(currentTables)
 	if err != nil {
 		return err
 	}
@@ -94,15 +99,7 @@ func (s *PostgresReader) prepareSlot() error {
 }
 
 func (s *PostgresReader) start() error {
-	state := s.opt.StateLoader.Load()
-	var currentLSN pglogrepl.LSN
-	if state != "" {
-		lsn, err := strconv.ParseUint(state, 10, 64)
-		if err == nil {
-			currentLSN = pglogrepl.LSN(lsn)
-			s.clientXLogPos = currentLSN
-		}
-	}
+	log.Printf("Starting Reader:%s from LSN %s\n", s.conf.Connector, s.clientXLogPos)
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", s.conf.Extras[PostgresExtraPublicationName]),
 		"proto_version '2'",
@@ -113,7 +110,7 @@ func (s *PostgresReader) start() error {
 		s.ctx,
 		s.conn.PgConn(),
 		s.conf.Extras[PostgresExtraSlotName],
-		currentLSN,
+		s.clientXLogPos,
 		pglogrepl.StartReplicationOptions{
 			PluginArgs: pluginArgs,
 			Mode:       pglogrepl.LogicalReplication,
@@ -124,9 +121,6 @@ func (s *PostgresReader) start() error {
 	}
 
 	for {
-		err = pglogrepl.SendStandbyStatusUpdate(context.Background(),
-			s.conn.PgConn(),
-			pglogrepl.StandbyStatusUpdate{WALWritePosition: s.clientXLogPos})
 		ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
 		msg, err := s.conn.PgConn().ReceiveMessage(ctx)
 		cancel()
@@ -136,8 +130,24 @@ func (s *PostgresReader) start() error {
 			}
 			return fmt.Errorf("接收消息失败: %w", err)
 		}
-		s.handler(msg)
+		if err := s.handler(msg); err != nil {
+			continue
+		}
+		_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
+			s.conn.PgConn(),
+			pglogrepl.StandbyStatusUpdate{WALWritePosition: s.clientXLogPos})
 	}
+}
+
+func (s *PostgresReader) getState() pglogrepl.LSN {
+	var lsn pglogrepl.LSN
+	state := s.opt.StateLoader.Load()
+	if state != "" {
+		if err := json.Unmarshal([]byte(state), &lsn); err != nil {
+			panic(err)
+		}
+	}
+	return lsn
 }
 
 func getPublicationTables(ctx context.Context, pool *pgx.Conn, pubName string) ([]string, error) {
@@ -224,7 +234,6 @@ func alterPublicationTables(ctx context.Context, pool *pgx.Conn, pubName string,
 			return fmt.Errorf("删除表%s失败: %w", tbl, err)
 		}
 	}
-
 	// 提交事务
 	return tx.Commit(ctx)
 }

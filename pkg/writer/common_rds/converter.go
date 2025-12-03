@@ -31,8 +31,10 @@ func Convert(record map[string]interface{}) map[string]interface{} {
 	return newRecord
 }
 
-func ConvertBuiltInTypedData(data entry.TypedData) (string, error) {
-
+func ConvertBuiltInTypedData(data entry.TypedData) (interface{}, error) {
+	if data.V == nil {
+		return nil, nil
+	}
 	switch data.T {
 	case entry.TypeUUID:
 		switch t := data.V.(type) {

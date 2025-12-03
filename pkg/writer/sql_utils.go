@@ -8,7 +8,6 @@ import (
 )
 
 func EventToSQL(e event.Event, fieldWrapper string) (string, []interface{}) {
-	fmt.Println(e.Payload)
 	switch e.Type {
 	case event.TypeInsert:
 		return insertEventToSQL(e, fieldWrapper)

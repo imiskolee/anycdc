@@ -52,3 +52,7 @@ func (t *Task) Consume(event event.Event) error {
 	}
 	return nil
 }
+
+func (t *Task) SaveState() error {
+	return t.reader.Save()
+}

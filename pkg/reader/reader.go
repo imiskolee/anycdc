@@ -19,6 +19,7 @@ type Reader interface {
 	Prepare() error
 	Start() error
 	Stop() error
+	Save() error
 }
 
 func NewReader(conf config.Reader, opt *ReaderOptions) Reader {

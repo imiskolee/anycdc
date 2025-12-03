@@ -35,6 +35,7 @@ func main() {
 			tg.Done()
 		})()
 	}
-
+	R.Tasks = tasks
+	go StateSyncJob()
 	tg.Wait()
 }

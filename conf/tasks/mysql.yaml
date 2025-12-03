@@ -1,5 +1,5 @@
 # sync all tables from reader.connector to writers.connector(2 destinations)
-name: pg_to_mysql_1
+name: mysql_task_1
 reader:
   connector: test_mysql_1
   extras:

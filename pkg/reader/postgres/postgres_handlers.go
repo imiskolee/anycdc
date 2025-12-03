@@ -2,13 +2,12 @@ package postgres
 
 import (
 	"bindolabs/anycdc/pkg/event"
-	"fmt"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"log"
 )
 
-func (s *PostgresReader) handler(msg pgproto3.BackendMessage) {
+func (s *PostgresReader) handler(msg pgproto3.BackendMessage) error {
 	switch msg := msg.(type) {
 	case *pgproto3.CopyData:
 		switch msg.Data[0] {
@@ -16,10 +15,11 @@ func (s *PostgresReader) handler(msg pgproto3.BackendMessage) {
 			s.handlePrimaryKeepaliveMessage(msg)
 			break
 		case pglogrepl.XLogDataByteID:
-			s.handleXLogData(msg)
+			return s.handleXLogData(msg)
 			break
 		}
 	}
+	return nil
 }
 
 func (s *PostgresReader) handlePrimaryKeepaliveMessage(msg *pgproto3.CopyData) {
@@ -34,11 +34,11 @@ func (s *PostgresReader) handlePrimaryKeepaliveMessage(msg *pgproto3.CopyData) {
 	*/
 }
 
-func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) {
+func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) error {
 	xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
 	if err != nil {
 		log.Fatalln("ParseXLogData failed:", err)
-		return
+		return err
 	}
 	logicalMsg, err := pglogrepl.ParseV2(xld.WALData, false)
 	if err != nil {
@@ -48,7 +48,7 @@ func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) {
 	switch logicalMsg := logicalMsg.(type) {
 	case *pglogrepl.RelationMessageV2:
 		s.relations[logicalMsg.RelationID] = *logicalMsg
-		return
+		return nil
 	case *pglogrepl.InsertMessageV2:
 		rel := s.relations[logicalMsg.RelationID]
 		data := s.convertDataMap(logicalMsg.RelationID, logicalMsg.Tuple.Columns)
@@ -61,7 +61,6 @@ func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) {
 		}
 		break
 	case *pglogrepl.UpdateMessageV2:
-		fmt.Println("Updated", logicalMsg)
 		rel := s.relations[logicalMsg.RelationID]
 		pk := getPrimaryKey(rel)
 		newData := s.convertDataMap(logicalMsg.RelationID, logicalMsg.NewTuple.Columns)
@@ -100,10 +99,11 @@ func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) {
 	if e.Type != 0 {
 		if err := s.opt.Subscriber.Consume(e); err != nil {
 			log.Fatal("Subscriber consume failed:", err)
-			return
+			return err
 		}
 	}
 	s.clientXLogPos = xld.ServerWALEnd
+	return nil
 }
 
 func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.TupleDataColumn) map[string]interface{} {

@@ -5,20 +5,21 @@ import (
 	"bindolabs/anycdc/pkg/entry"
 	"bindolabs/anycdc/pkg/event"
 	"errors"
+	"fmt"
 	"github.com/go-mysql-org/go-mysql/replication"
-	"github.com/go-mysql-org/go-mysql/schema"
-	"os"
 )
 
-var typesMapping = map[entry.Type][]int{
-	entry.TypeNumeric:   []int{schema.TYPE_NUMBER, schema.TYPE_MEDIUM_INT, schema.TYPE_DECIMAL, schema.TYPE_FLOAT},
-	entry.TypeString:    []int{schema.TYPE_STRING},
-	entry.TypeJSON:      []int{schema.TYPE_JSON},
-	entry.TypeTimestamp: []int{schema.TYPE_DATETIME},
-	entry.TypeDate:      []int{schema.TYPE_DATE},
+var typesMapping = map[entry.Type][]string{
+	entry.TypeNumeric: {ColumnTypeSmallInt, ColumnTypeMediumInt, ColumnTypeInt,
+		ColumnTypeBigInt, ColumnTypeDecimal, ColumnTypeFloat, ColumnTypeDouble, ColumnTypeReal, ColumnTypeNumeric},
+	entry.TypeString: {ColumnTypeVarchar, ColumnTypeChar, ColumnTypeLineString, ColumnTypeMultiLineString,
+		ColumnTypeTinyText, ColumnTypeText, ColumnTypeMediumText, ColumnTypeLongText},
+	entry.TypeJSON:      {ColumnTypeJSON},
+	entry.TypeTimestamp: {ColumnTypeDateTime, ColumnTypeTimestamp},
+	entry.TypeDate:      {ColumnTypeDate},
 }
 
-func getBuiltType(mysqlType int) entry.Type {
+func getBuiltType(mysqlType string) entry.Type {
 	for k, tt := range typesMapping {
 		for _, t := range tt {
 			if t == mysqlType {
@@ -32,10 +33,6 @@ func getBuiltType(mysqlType int) entry.Type {
 func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 	connector, _ := config.GetConnector(s.conf.Connector)
 	switch binlog.Header.EventType {
-	case replication.TABLE_MAP_EVENT:
-		tableEvent := binlog.Event.(*replication.TableMapEvent)
-		tableEvent.Dump(os.Stdout)
-		break
 	case replication.WRITE_ROWS_EVENTv2, replication.UPDATE_ROWS_EVENTv2:
 		rowsEvent, ok := binlog.Event.(*replication.RowsEvent)
 		if !ok {
@@ -58,6 +55,7 @@ func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 		table, _ := s.schema.GetTable(string(rowsEvent.Table.Schema), string(rowsEvent.Table.Table))
 		records := s.rowsToEntry(rowsEvent)
 		keys := table.GetPrimaryKeys()
+		fmt.Printf("RRRRR:%+v %s\n", table, keys)
 		pk := ""
 		eventType := event.TypeInsert
 		if binlog.Header.EventType == replication.UPDATE_ROWS_EVENTv2 {
@@ -69,7 +67,7 @@ func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 				pk = keys[0]
 				pkValue = record[pk]
 			}
-			_ = s.opt.Subscriber.Consume(event.Event{
+			err := s.opt.Subscriber.Consume(event.Event{
 				Schema:          string(rowsEvent.Table.Schema),
 				Table:           string(rowsEvent.Table.Table),
 				PrimaryKey:      pk,
@@ -77,6 +75,9 @@ func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 				Type:            eventType,
 				Payload:         record,
 			})
+			if err != nil {
+				return err
+			}
 		}
 		break
 	}
@@ -84,7 +85,6 @@ func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 }
 
 func (s *MySQLReader) rowsToEntry(binlog *replication.RowsEvent) []map[string]interface{} {
-	types := binlog.Table.ColumnType
 	schema, err := s.schema.GetTable(string(binlog.Table.Schema), string(binlog.Table.Table))
 	if err != nil {
 		panic(err)
@@ -94,8 +94,7 @@ func (s *MySQLReader) rowsToEntry(binlog *replication.RowsEvent) []map[string]in
 		record := make(map[string]interface{})
 		for idx, col := range row {
 			field, _ := schema.GetFieldByIndex(uint(idx))
-			colType := types[idx]
-			builtType := getBuiltType(int(colType))
+			builtType := getBuiltType(field.Type)
 			td := entry.NewTypedData(builtType, col)
 			record[field.Name] = td
 		}

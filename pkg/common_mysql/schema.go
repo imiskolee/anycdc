@@ -29,7 +29,7 @@ func SyncSchema(connector config.Connector, s string, tableName string) schema.S
 
 	var fields []struct {
 		ColumnKey  string `gorm:"column:column_key"`
-		Index      uint   `gorm:"idx"`
+		Index      uint   `gorm:"column:idx"`
 		ColumnName string `gorm:"column:column_name"`
 		DataType   string `gorm:"column:data_type"`
 	}
@@ -43,13 +43,14 @@ func SyncSchema(connector config.Connector, s string, tableName string) schema.S
 	}
 	for _, field := range fields {
 		isPri := false
-		if strings.ToUpper(field.ColumnKey) == "PRIMARY" {
+		if strings.ToUpper(field.ColumnKey) == "PRI" {
 			isPri = true
 		}
 		sch.Fields = append(sch.Fields, schema.SimpleField{
 			Name:         field.ColumnName,
-			Index:        field.Index,
+			Index:        field.Index - 1, //starting from 1 on data tables
 			IsPrimaryKey: isPri,
+			Type:         field.DataType,
 		})
 	}
 	return sch

@@ -12,10 +12,14 @@ import (
 
 var G Config
 
+type BaseConfig struct {
+	DataDir string `yaml:"data_dir"`
+}
+
 type Config struct {
-	StateRootDir string
-	Connectors   map[string]Connector
-	Tasks        []Task
+	Base       BaseConfig
+	Connectors map[string]Connector
+	Tasks      []Task
 }
 
 func GetConnector(name string) (Connector, error) {
@@ -27,10 +31,15 @@ func GetConnector(name string) (Connector, error) {
 }
 
 func GetStateFileName(name string) string {
-	return G.StateRootDir + "/" + name + ".sv"
+	return path.Join(G.Base.DataDir, name+".sv")
 }
 
 func Parse(dir string) {
+	var config BaseConfig
+	if err := loadYaml(path.Join(dir, "config.yaml"), &config); err != nil {
+		panic(err)
+	}
+	G.Base = config
 	var connectors struct {
 		Connectors []Connector `yaml:"connectors"`
 	}
