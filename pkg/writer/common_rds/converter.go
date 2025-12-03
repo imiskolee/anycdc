@@ -1,9 +1,9 @@
 package common_rds
 
 import (
-	"bindolabs/anycdc/pkg/entry"
 	"encoding/json"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/entry"
 	uuid "github.com/satori/go.uuid"
 	"strconv"
 	"time"

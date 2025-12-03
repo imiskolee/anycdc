@@ -1,11 +1,11 @@
 package mysql
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/entry"
-	"bindolabs/anycdc/pkg/event"
 	"errors"
 	"github.com/go-mysql-org/go-mysql/replication"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/entry"
+	"github.com/imiskolee/anycdc/pkg/event"
 )
 
 var typesMapping = map[entry.Type][]string{

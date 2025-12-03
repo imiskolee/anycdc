@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"bindolabs/anycdc/pkg/entry"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/entry"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

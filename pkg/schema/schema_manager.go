@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"bindolabs/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/config"
 	"time"
 )
 

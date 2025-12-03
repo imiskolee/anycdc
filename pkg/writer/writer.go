@@ -1,8 +1,8 @@
 package writer
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/event"
 )
 
 var _writers map[config.ConnectorType]func(writer config.Writer) Writer

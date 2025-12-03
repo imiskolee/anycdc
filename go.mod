@@ -1,4 +1,4 @@
-module bindolabs/anycdc
+module github.com/imiskolee/anycdc
 
 go 1.24.5
 

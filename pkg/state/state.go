@@ -1,7 +1,7 @@
 package state
 
 import (
-	"bindolabs/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/config"
 	"os"
 )
 

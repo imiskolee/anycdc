@@ -1,12 +1,12 @@
 package tests
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/event"
-	"bindolabs/anycdc/pkg/reader"
-	postgres2 "bindolabs/anycdc/pkg/reader/postgres"
-	"bindolabs/anycdc/pkg/state"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/reader"
+	postgres2 "github.com/imiskolee/anycdc/pkg/reader/postgres"
+	"github.com/imiskolee/anycdc/pkg/state"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/driver/postgres"

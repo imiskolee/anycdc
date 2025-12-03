@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"bindolabs/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/event"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"log"

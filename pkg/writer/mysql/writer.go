@@ -1,13 +1,13 @@
 package mysql
 
 import (
-	"bindolabs/anycdc/pkg/common_mysql"
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/entry"
-	"bindolabs/anycdc/pkg/event"
-	"bindolabs/anycdc/pkg/schema"
-	"bindolabs/anycdc/pkg/writer"
-	"bindolabs/anycdc/pkg/writer/common_rds"
+	"github.com/imiskolee/anycdc/pkg/common_mysql"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/entry"
+	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/schema"
+	"github.com/imiskolee/anycdc/pkg/writer"
+	"github.com/imiskolee/anycdc/pkg/writer/common_rds"
 	"gorm.io/gorm"
 	"sync"
 )

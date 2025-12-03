@@ -1,12 +1,12 @@
 package task
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/event"
-	"bindolabs/anycdc/pkg/reader"
-	"bindolabs/anycdc/pkg/state"
-	"bindolabs/anycdc/pkg/writer"
 	"errors"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/reader"
+	"github.com/imiskolee/anycdc/pkg/state"
+	"github.com/imiskolee/anycdc/pkg/writer"
 	"log"
 	"sync"
 	"sync/atomic"

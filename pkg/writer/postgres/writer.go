@@ -1,13 +1,13 @@
 package postgres
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/entry"
-	"bindolabs/anycdc/pkg/event"
-	"bindolabs/anycdc/pkg/schema"
-	"bindolabs/anycdc/pkg/writer"
-	"bindolabs/anycdc/pkg/writer/common_rds"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/entry"
+	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/schema"
+	"github.com/imiskolee/anycdc/pkg/writer"
+	"github.com/imiskolee/anycdc/pkg/writer/common_rds"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

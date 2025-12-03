@@ -1,11 +1,11 @@
 package tests
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/reader/postgres"
-	"bindolabs/anycdc/pkg/task"
-	"bindolabs/anycdc/pkg/writer"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/reader/postgres"
+	"github.com/imiskolee/anycdc/pkg/task"
+	"github.com/imiskolee/anycdc/pkg/writer"
 	uuid "github.com/satori/go.uuid"
 	"github.com/shopspring/decimal"
 	"testing"

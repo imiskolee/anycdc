@@ -1,6 +1,6 @@
 package reader
 
-import "bindolabs/anycdc/pkg/config"
+import "github.com/imiskolee/anycdc/pkg/config"
 
 var _readers map[config.ConnectorType]func(conf config.Reader, opt *ReaderOptions) Reader
 

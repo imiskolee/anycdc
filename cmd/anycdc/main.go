@@ -1,15 +1,15 @@
 package main
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/task"
 	"flag"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/task"
 	"sync"
 
-	_ "bindolabs/anycdc/pkg/reader/mysql"
-	_ "bindolabs/anycdc/pkg/reader/postgres"
-	_ "bindolabs/anycdc/pkg/writer/mysql"
-	_ "bindolabs/anycdc/pkg/writer/postgres"
+	_ "github.com/imiskolee/anycdc/pkg/reader/mysql"
+	_ "github.com/imiskolee/anycdc/pkg/reader/postgres"
+	_ "github.com/imiskolee/anycdc/pkg/writer/mysql"
+	_ "github.com/imiskolee/anycdc/pkg/writer/postgres"
 )
 
 func main() {

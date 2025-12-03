@@ -1,14 +1,14 @@
 package mysql
 
 import (
-	"bindolabs/anycdc/pkg/common_mysql"
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/reader"
-	"bindolabs/anycdc/pkg/schema"
 	"context"
 	"encoding/json"
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/replication"
+	"github.com/imiskolee/anycdc/pkg/common_mysql"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/reader"
+	"github.com/imiskolee/anycdc/pkg/schema"
 	"log"
 	"strconv"
 	"time"

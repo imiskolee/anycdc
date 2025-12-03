@@ -1,6 +1,6 @@
 package main
 
-import "bindolabs/anycdc/pkg/task"
+import "github.com/imiskolee/anycdc/pkg/task"
 
 type Runtime struct {
 	Tasks []*task.Task

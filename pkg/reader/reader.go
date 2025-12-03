@@ -1,9 +1,9 @@
 package reader
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/event"
-	"bindolabs/anycdc/pkg/state"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/state"
 )
 
 type Subscriber interface {

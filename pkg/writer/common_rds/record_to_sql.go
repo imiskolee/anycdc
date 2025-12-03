@@ -1,9 +1,9 @@
 package common_rds
 
 import (
-	"bindolabs/anycdc/pkg/config"
-	"bindolabs/anycdc/pkg/event"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/event"
 	"strings"
 )
 

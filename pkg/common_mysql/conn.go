@@ -1,8 +1,8 @@
 package common_mysql
 
 import (
-	"bindolabs/anycdc/pkg/config"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

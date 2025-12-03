@@ -1,8 +1,8 @@
 package writer
 
 import (
-	"bindolabs/anycdc/pkg/event"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/event"
 	"log"
 	"strings"
 )

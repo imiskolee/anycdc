@@ -1,10 +1,10 @@
 package postgres
 
 import (
-	"bindolabs/anycdc/pkg/config"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
