@@ -4,7 +4,11 @@ import (
 	"flag"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/task"
-	"sync"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	_ "github.com/imiskolee/anycdc/pkg/reader/mysql"
 	_ "github.com/imiskolee/anycdc/pkg/reader/postgres"
@@ -13,27 +17,40 @@ import (
 )
 
 func main() {
+
 	var tasks []*task.Task
 	var rootDir string
 	flag.StringVar(&rootDir, "config-dir", "./", "root config dir")
 	flag.Parse()
 	config.Parse(rootDir)
-	tg := &sync.WaitGroup{}
 	for _, t := range config.G.Tasks {
 		tt := task.NewTask(t)
 		if err := tt.Prepare(); err != nil {
 			panic(err)
 		}
 		tasks = append(tasks, tt)
-		tg.Add(1)
+		R.wg.Add(1)
 		go (func() {
 			if err := tt.Start(); err != nil {
 				panic(err)
 			}
-			tg.Done()
+			R.wg.Done()
 		})()
 	}
 	R.Tasks = tasks
 	go StateSyncJob()
-	tg.Wait()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGHUP)
+	timeout := 30 * time.Second
+	select {
+	case <-sigChan:
+		R.Stop()
+		break
+	case <-time.After(timeout):
+		log.Println("Focus exited after timeout")
+		os.Exit(0)
+	}
+	R.wg.Wait()
+	time.Sleep(1 * time.Second)
 }

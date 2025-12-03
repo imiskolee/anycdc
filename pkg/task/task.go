@@ -105,3 +105,8 @@ func (t *Task) consume(event *event.Event) error {
 func (t *Task) SaveState() error {
 	return t.reader.Save()
 }
+
+func (t *Task) Stop() error {
+	_ = t.reader.Save()
+	return t.reader.Stop()
+}

@@ -22,6 +22,7 @@ func init() {
 type PostgresReader struct {
 	conf          config.Reader
 	ctx           context.Context
+	cancel        context.CancelFunc
 	conn          *pgx.Conn
 	opt           reader.ReaderOptions
 	clientXLogPos pglogrepl.LSN
@@ -34,9 +35,12 @@ func registerTypes(typ *pgtype.Map) {
 }
 
 func NewPostgresReader(conf config.Reader, options *reader.ReaderOptions) reader.Reader {
+	ctx, cancel := context.WithCancel(context.TODO())
+
 	return &PostgresReader{
 		conf:      conf,
-		ctx:       context.Background(),
+		ctx:       ctx,
+		cancel:    cancel,
 		opt:       *options,
 		relations: map[uint32]pglogrepl.RelationMessageV2{},
 		typeMap:   pgtype.NewMap(),
@@ -53,6 +57,7 @@ func (s *PostgresReader) Start() error {
 }
 
 func (s *PostgresReader) Stop() error {
+	s.cancel()
 	return nil
 }
 

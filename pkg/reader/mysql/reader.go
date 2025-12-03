@@ -34,7 +34,7 @@ type MySQLReader struct {
 }
 
 func NewMySQLReader(conf config.Reader, opt *reader.ReaderOptions) reader.Reader {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	return &MySQLReader{
 		conf:   conf,
 		opt:    *opt,
@@ -83,7 +83,7 @@ func (s *MySQLReader) Start() error {
 		default:
 
 		}
-		ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		event, err := streamer.GetEvent(ctx)
 		cancel()
 		if err != nil {

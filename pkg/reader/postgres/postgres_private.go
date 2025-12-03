@@ -121,7 +121,12 @@ func (s *PostgresReader) start() error {
 	}
 
 	for {
-		ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
+		select {
+		case <-s.ctx.Done():
+			return nil
+		default:
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		msg, err := s.conn.PgConn().ReceiveMessage(ctx)
 		cancel()
 		if err != nil {
