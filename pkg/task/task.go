@@ -71,15 +71,25 @@ func (t *Task) Start() error {
 }
 
 func (t *Task) Consume(event event.Event) error {
+	return t.consume(&event)
+}
+
+func (t *Task) consume(event *event.Event) error {
 	wg := &sync.WaitGroup{}
 	var hasError atomic.Bool
 	for _, w := range t.writers {
 		wg.Add(1)
 		go (func() {
 			defer wg.Done()
-			err := w.Execute(event)
+			var err error
+			for i := 0; i < 3; i++ {
+				err = w.Execute(*event)
+				if err != nil {
+					log.Println("Failed to execute event:", err)
+					continue
+				}
+			}
 			if err != nil {
-				log.Println("Failed to execute event:", err)
 				hasError.Store(true)
 			}
 		})()
@@ -88,6 +98,7 @@ func (t *Task) Consume(event event.Event) error {
 	if hasError.Load() {
 		return errors.New("Failed to execute event")
 	}
+	t.Metric.NewEvent(event.FullTableName(), event.Type)
 	return nil
 }
 

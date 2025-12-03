@@ -1,5 +1,7 @@
 package event
 
+import "fmt"
+
 type Event struct {
 	Type            Type
 	Schema          string
@@ -8,6 +10,10 @@ type Event struct {
 	PrimaryKeyValue interface{}
 	State           string
 	Payload         map[string]interface{}
+}
+
+func (e Event) FullTableName() string {
+	return fmt.Sprintf("%s.%s", e.Schema, e.Table)
 }
 
 func (e Event) Copy() Event {
