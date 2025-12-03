@@ -14,7 +14,6 @@ import (
 
 func main() {
 	var tasks []*task.Task
-
 	var rootDir string
 	flag.StringVar(&rootDir, "config-dir", "./", "root config dir")
 	flag.Parse()

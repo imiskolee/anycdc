@@ -30,14 +30,16 @@ type MySQLReader struct {
 	ctx        context.Context
 	syncer     *replication.BinlogSyncer
 	currentPos mysql.Position
+	cancel     context.CancelFunc
 }
 
 func NewMySQLReader(conf config.Reader, opt *reader.ReaderOptions) reader.Reader {
-
+	ctx, cancel := context.WithCancel(context.Background())
 	return &MySQLReader{
 		conf:   conf,
 		opt:    *opt,
-		ctx:    context.Background(),
+		ctx:    ctx,
+		cancel: cancel,
 		schema: schema.NewManager(conf.Connector, common_mysql.SyncSchema),
 	}
 }
@@ -74,6 +76,13 @@ func (s *MySQLReader) Start() error {
 	}
 
 	for {
+		select {
+		case <-s.ctx.Done():
+			log.Printf("Stopped")
+			return nil
+		default:
+
+		}
 		ctx, cancel := context.WithTimeout(s.ctx, 1*time.Second)
 		event, err := streamer.GetEvent(ctx)
 		cancel()
@@ -122,6 +131,7 @@ func (s *MySQLReader) reloadState() mysql.Position {
 }
 
 func (s *MySQLReader) Stop() error {
+	s.cancel()
 	return nil
 }
 
