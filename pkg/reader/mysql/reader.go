@@ -7,9 +7,9 @@ import (
 	"github.com/go-mysql-org/go-mysql/replication"
 	"github.com/imiskolee/anycdc/pkg/common_mysql"
 	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/reader"
 	"github.com/imiskolee/anycdc/pkg/schema"
-	"log"
 	"strconv"
 	"time"
 )
@@ -78,7 +78,6 @@ func (s *MySQLReader) Start() error {
 	for {
 		select {
 		case <-s.ctx.Done():
-			log.Printf("Stopped")
 			return nil
 		default:
 
@@ -90,7 +89,7 @@ func (s *MySQLReader) Start() error {
 			continue
 		}
 		if err := s.handle(event); err != nil {
-			log.Println("Sync error:" + err.Error())
+			logs.Error("can not handle event %+v %s", event, err)
 			continue
 		}
 		s.currentPos = s.syncer.GetNextPosition()

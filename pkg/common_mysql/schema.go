@@ -2,22 +2,17 @@ package common_mysql
 
 import (
 	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/schema"
-	"gorm.io/gorm"
-	"log"
 	"strings"
 	"time"
 )
 
-var conn *gorm.DB
-
 func SyncSchema(connector config.Connector, s string, tableName string) schema.SimpleTableSchema {
-	if conn == nil {
-		c, err := Connect(connector)
-		if err != nil {
-			panic(err)
-		}
-		conn = c
+	logs.Info("starting sync schema from source database (%s), schema=%s,table=%s", connector, s, tableName)
+	conn, err := Connect(connector)
+	if err != nil {
+		return schema.SimpleTableSchema{}
 	}
 	sql := `SELECT 
     	COLUMN_KEY column_key,
@@ -34,7 +29,7 @@ func SyncSchema(connector config.Connector, s string, tableName string) schema.S
 		DataType   string `gorm:"column:data_type"`
 	}
 	if err := conn.Raw(sql, s, tableName).Scan(&fields).Error; err != nil {
-		log.Println("Unable get information schema columns:", err.Error())
+		logs.Error("failed sync schema,err=%s", err)
 		return schema.SimpleTableSchema{}
 	}
 	sch := schema.SimpleTableSchema{

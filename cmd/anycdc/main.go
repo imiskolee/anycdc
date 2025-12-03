@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/task"
 	"log"
 	"os"
@@ -16,13 +18,26 @@ import (
 	_ "github.com/imiskolee/anycdc/pkg/writer/postgres"
 )
 
-func main() {
+func printHeader() {
+	header := `
+=====================================================
+=================== AnyCDC ==========================
+=====================================================
+`
+	fmt.Print(header)
+}
 
+func main() {
+	printHeader()
 	var tasks []*task.Task
 	var rootDir string
 	flag.StringVar(&rootDir, "config-dir", "./", "root config dir")
 	flag.Parse()
-	config.Parse(rootDir)
+	err := config.Parse(rootDir)
+	if err != nil {
+		logs.Error("load config file failed,err:", err)
+		return
+	}
 	for _, t := range config.G.Tasks {
 		tt := task.NewTask(t)
 		if err := tt.Prepare(); err != nil {
@@ -39,7 +54,6 @@ func main() {
 	}
 	R.Tasks = tasks
 	go StateSyncJob()
-
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGHUP)
 	timeout := 30 * time.Second

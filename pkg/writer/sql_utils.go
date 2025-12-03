@@ -3,7 +3,6 @@ package writer
 import (
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/event"
-	"log"
 	"strings"
 )
 
@@ -60,7 +59,6 @@ func insertEventToSQL(event event.Event, fieldWrapper string) (string, []interfa
 		strings.Join(updateClauses, ", "),
 	)
 	params := append(values, updateValues...)
-	log.Println("SQL=", insertSQL)
 	return insertSQL, params
 }
 

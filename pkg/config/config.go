@@ -2,8 +2,8 @@ package config
 
 import (
 	"errors"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"gopkg.in/yaml.v3"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,8 +12,16 @@ import (
 
 var G Config
 
+const (
+	LogLevelDebug = "debug"
+	LogLevelInfo  = "info"
+	LogLevelWarn  = "warn"
+	LogLevelError = "error"
+)
+
 type BaseConfig struct {
-	DataDir string `yaml:"data_dir"`
+	DataDir  string `yaml:"data_dir"`
+	LogLevel string `yaml:"log_level;default=info"`
 }
 
 type Config struct {
@@ -34,23 +42,40 @@ func GetStateFileName(name string) string {
 	return path.Join(G.Base.DataDir, name+".sv")
 }
 
-func Parse(dir string) {
+var errInvalidConfig = errors.New("INVALID_CONFIG")
+
+func Parse(dir string) error {
+	logs.Info("Starting parse config on dir:%s", dir)
+
 	var config BaseConfig
-	if err := loadYaml(path.Join(dir, "config.yaml"), &config); err != nil {
-		panic(err)
+	{
+		p := path.Join(dir, "config.yaml")
+		if err := loadYaml(p, &config); err != nil {
+			logs.Error("Can not load %s, because of %s", p, err)
+			return err
+		}
 	}
 	G.Base = config
 	var connectors struct {
 		Connectors []Connector `yaml:"connectors"`
 	}
-
-	if err := loadYaml(path.Join(dir, "connectors.yaml"), &connectors); err != nil {
-		panic("Can not load connectors.yaml, reason: " + err.Error())
+	{
+		p := path.Join(dir, "config.yaml")
+		if err := loadYaml(p, &connectors); err != nil {
+			logs.Error("Can not load %s, because of %s", p, err)
+			return err
+		}
 	}
+
 	G.Connectors = make(map[string]Connector)
-	for _, v := range connectors.Connectors {
+	for k, v := range connectors.Connectors {
+		if v.Alias == "" {
+			logs.Error("empty connector alias on index: %d", k)
+			return errInvalidConfig
+		}
 		if _, ok := G.Connectors[v.Alias]; ok {
-			panic("Duplicate connector: " + v.Alias)
+			logs.Error("duplicate connectors, already define connector %s before.", v.Alias)
+			return errInvalidConfig
 		}
 		G.Connectors[v.Alias] = v
 	}
@@ -61,19 +86,22 @@ func Parse(dir string) {
 			return nil
 		}
 		if err := loadYaml(path, &task); err != nil {
-			panic("Can not load " + (path) + ", reason: " + err.Error())
+			logs.Error("can not load task file:%s, because of %s", path, err)
+			return nil
 		}
 		if _, ok := taskMap[task.Name]; ok {
-			panic("Duplicated task:" + task.Name)
+			logs.Error("duplicate tasks, already define task %s before.", task.Name)
+			return nil
 		}
 		taskMap[task.Name] = true
 		G.Tasks = append(G.Tasks, task)
 		return nil
 	})
+	return nil
 }
 
 func loadYaml(file string, v interface{}) error {
-	log.Println("Starting loadYAML:" + file)
+	logs.Info("Starting loadYAML:%s", file)
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return err

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"time"
 )
 
 func (s *Runtime) StateSync() {
-	log.Println("Starting Flush State....")
+	logs.Info("starting flush state...")
 	for _, t := range s.Tasks {
 		_ = t.SaveState()
 	}

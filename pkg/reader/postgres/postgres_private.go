@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"log"
 	"strings"
 	"time"
 )
@@ -99,7 +99,7 @@ func (s *PostgresReader) prepareSlot() error {
 }
 
 func (s *PostgresReader) start() error {
-	log.Printf("Starting Reader:%s from LSN %s\n", s.conf.Connector, s.clientXLogPos)
+	logs.Info("Starting Reader:%s from LSN %s\n", s.conf.Connector, s.clientXLogPos)
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", s.conf.Extras[PostgresExtraPublicationName]),
 		"proto_version '2'",

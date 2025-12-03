@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/task"
-	"log"
 	"sync"
 )
 
@@ -14,7 +14,7 @@ type Runtime struct {
 var R Runtime
 
 func (r *Runtime) Stop() {
-	log.Println("Starting Stop...")
+	logs.Info("starting stop...")
 	for _, t := range r.Tasks {
 		_ = t.Stop()
 	}

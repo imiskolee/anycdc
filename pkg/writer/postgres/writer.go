@@ -5,13 +5,13 @@ import (
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/entry"
 	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/schema"
 	"github.com/imiskolee/anycdc/pkg/writer"
 	"github.com/imiskolee/anycdc/pkg/writer/common_rds"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
 	"sync"
 	"time"
 )
@@ -89,7 +89,7 @@ ORDER BY a.attnum;
 		DataType   string `gorm:"column:data_type"`
 	}
 	if err := s.conn.Raw(sql, tableName).Scan(&fields).Error; err != nil {
-		log.Println("Unable get information schema columns:", err.Error())
+		logs.Error("can not get schema information, %s", s.conf.Connector)
 		return schema.SimpleTableSchema{}, err
 	}
 

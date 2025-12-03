@@ -1,1 +1,2 @@
 data_dir: .
+log_level: debug

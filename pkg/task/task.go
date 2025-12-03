@@ -4,10 +4,10 @@ import (
 	"errors"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/reader"
 	"github.com/imiskolee/anycdc/pkg/state"
 	"github.com/imiskolee/anycdc/pkg/writer"
-	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -85,7 +85,7 @@ func (t *Task) consume(event *event.Event) error {
 			for i := 0; i < 3; i++ {
 				err = w.Execute(*event)
 				if err != nil {
-					log.Println("Failed to execute event:", err)
+					logs.Error("failed to execute event:%+v %s", event, err)
 					continue
 				}
 			}

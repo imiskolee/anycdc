@@ -1,5 +1,7 @@
 package config
 
+import "fmt"
+
 type ConnectorType string
 
 const (
@@ -17,4 +19,8 @@ type Connector struct {
 	Password string            `yaml:"password"`
 	Database string            `yaml:"database"`
 	Extras   map[string]string `yaml:"extras"`
+}
+
+func (s Connector) String() string {
+	return fmt.Sprintf("host=%s,port=%d,database=%s", s.Host, s.Port, s.Database)
 }
