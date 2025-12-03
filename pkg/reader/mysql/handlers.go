@@ -5,7 +5,6 @@ import (
 	"bindolabs/anycdc/pkg/entry"
 	"bindolabs/anycdc/pkg/event"
 	"errors"
-	"fmt"
 	"github.com/go-mysql-org/go-mysql/replication"
 )
 
@@ -55,7 +54,6 @@ func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 		table, _ := s.schema.GetTable(string(rowsEvent.Table.Schema), string(rowsEvent.Table.Table))
 		records := s.rowsToEntry(rowsEvent)
 		keys := table.GetPrimaryKeys()
-		fmt.Printf("RRRRR:%+v %s\n", table, keys)
 		pk := ""
 		eventType := event.TypeInsert
 		if binlog.Header.EventType == replication.UPDATE_ROWS_EVENTv2 {

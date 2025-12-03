@@ -18,7 +18,6 @@ func main() {
 	var rootDir string
 	flag.StringVar(&rootDir, "config-dir", "./", "root config dir")
 	flag.Parse()
-
 	config.Parse(rootDir)
 	tg := &sync.WaitGroup{}
 	for _, t := range config.G.Tasks {

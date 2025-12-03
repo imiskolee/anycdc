@@ -6,18 +6,42 @@ import (
 	"bindolabs/anycdc/pkg/reader"
 	"bindolabs/anycdc/pkg/state"
 	"bindolabs/anycdc/pkg/writer"
+	"errors"
+	"log"
+	"sync"
+	"sync/atomic"
+	"time"
 )
+
+type Metric struct {
+	LastEventAt time.Time
+	SyncedEvent map[string]map[event.Type]uint64
+}
+
+func (m *Metric) NewEvent(schema string, t event.Type) {
+	if _, ok := m.SyncedEvent[schema]; ok {
+		m.SyncedEvent[schema][t] += 1
+	} else {
+		m.SyncedEvent[schema] = map[event.Type]uint64{
+			t: 1,
+		}
+	}
+}
 
 type Task struct {
 	conf    config.Task
 	reader  reader.Reader
 	writers []writer.Writer
 	buffer  []event.Event
+	Metric  Metric
 }
 
 func NewTask(task config.Task) *Task {
 	return &Task{
 		conf: task,
+		Metric: Metric{
+			SyncedEvent: map[string]map[event.Type]uint64{},
+		},
 	}
 }
 
@@ -47,8 +71,22 @@ func (t *Task) Start() error {
 }
 
 func (t *Task) Consume(event event.Event) error {
+	wg := &sync.WaitGroup{}
+	var hasError atomic.Bool
 	for _, w := range t.writers {
-		_ = w.Execute(event)
+		wg.Add(1)
+		go (func() {
+			defer wg.Done()
+			err := w.Execute(event)
+			if err != nil {
+				log.Println("Failed to execute event:", err)
+				hasError.Store(true)
+			}
+		})()
+	}
+	wg.Wait()
+	if hasError.Load() {
+		return errors.New("Failed to execute event")
 	}
 	return nil
 }
