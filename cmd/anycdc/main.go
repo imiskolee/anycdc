@@ -56,14 +56,17 @@ func main() {
 	go StateSyncJob()
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGHUP)
-	timeout := 30 * time.Second
+
 	select {
 	case <-sigChan:
 		R.Stop()
-		break
-	case <-time.After(timeout):
-		log.Println("Focus exited after timeout")
-		os.Exit(0)
+		timeout := 30 * time.Second
+		select {
+		case <-time.After(timeout):
+			log.Println("Focus exited after timeout")
+			os.Exit(0)
+		default:
+		}
 	}
 	R.wg.Wait()
 	time.Sleep(1 * time.Second)

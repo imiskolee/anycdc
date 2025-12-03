@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/imiskolee/anycdc/pkg/config"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"os"
 )
 
@@ -24,6 +25,7 @@ func (s *State) Load() string {
 
 func (s *State) Save(state string) error {
 	fname := s.getFileName()
+	logs.Info("saving state to file: %s,state=%s", fname, state)
 	return os.WriteFile(fname, []byte(state), 0644)
 }
 

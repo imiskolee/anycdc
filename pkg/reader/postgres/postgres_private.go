@@ -54,12 +54,6 @@ func (s *PostgresReader) prepare() error {
 		if err != nil {
 			return err
 		}
-	} else {
-		var currentLSN pglogrepl.LSN
-		query := `select received_lsn from pg_stat_replication where pubname = $1`
-		row := s.conn.QueryRow(s.ctx, query, s.conf.Extras[PostgresExtraPublicationName])
-		row.Scan(&currentLSN)
-		s.clientXLogPos = currentLSN
 	}
 
 	currentTables, err := getPublicationTables(s.ctx, s.conn, s.conf.Extras[PostgresExtraPublicationName])
@@ -94,6 +88,13 @@ func (s *PostgresReader) prepareSlot() error {
 		if err != nil {
 			return err
 		}
+	}
+	{
+		var currentLSN pglogrepl.LSN
+		query := `SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = $1`
+		row := s.conn.QueryRow(s.ctx, query, s.conf.Extras[PostgresExtraSlotName])
+		_ = row.Scan(&currentLSN)
+		s.clientXLogPos = currentLSN
 	}
 	return nil
 }

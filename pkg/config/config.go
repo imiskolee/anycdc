@@ -33,6 +33,7 @@ type Config struct {
 func GetConnector(name string) (Connector, error) {
 	config, ok := G.Connectors[name]
 	if !ok {
+		logs.Error("connector %s not found", name)
 		return Connector{}, errors.New("can not found connector " + name)
 	}
 	return config, nil
@@ -60,7 +61,7 @@ func Parse(dir string) error {
 		Connectors []Connector `yaml:"connectors"`
 	}
 	{
-		p := path.Join(dir, "config.yaml")
+		p := path.Join(dir, "connectors.yaml")
 		if err := loadYaml(p, &connectors); err != nil {
 			logs.Error("Can not load %s, because of %s", p, err)
 			return err

@@ -3,12 +3,17 @@ package logs
 import (
 	"fmt"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var z *zap.Logger
 
 func init() {
-	z, _ = zap.NewProduction()
+	config := zap.NewProductionConfig()
+	config.DisableCaller = true
+	config.Encoding = "console"
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	z, _ = config.Build()
 }
 
 func Debug(msg string, args ...interface{}) {
