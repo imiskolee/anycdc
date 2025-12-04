@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	StatusStarted = "started"
+	StatusStopped = "stopped"
+)
+
 type Metric struct {
 	LastEventAt time.Time
 	SyncedEvent map[string]map[event.Type]uint64
@@ -34,6 +39,7 @@ type Task struct {
 	writers []writer.Writer
 	buffer  []event.Event
 	Metric  Metric
+	Status  string
 }
 
 func NewTask(task config.Task) *Task {
@@ -42,6 +48,7 @@ func NewTask(task config.Task) *Task {
 		Metric: Metric{
 			SyncedEvent: map[string]map[event.Type]uint64{},
 		},
+		Status: StatusStopped,
 	}
 }
 
@@ -67,7 +74,16 @@ func (t *Task) Prepare() error {
 }
 
 func (t *Task) Start() error {
-	return t.reader.Start()
+	if t.Status == StatusStarted {
+		return logs.Errorf("task already started: %s", t.conf.Name)
+	}
+	t.Status = StatusStarted
+	err := t.reader.Start()
+	if err != nil {
+		logs.Info("task started: %s", t.conf.Name)
+		t.Status = StatusStopped
+	}
+	return err
 }
 
 func (t *Task) Consume(event event.Event) error {
@@ -85,7 +101,7 @@ func (t *Task) consume(event *event.Event) error {
 			for i := 0; i < 3; i++ {
 				err = w.Execute(*event)
 				if err != nil {
-					logs.Error("failed to execute event:%+v %s", event, err)
+					logs.Error("failed to execute event on writer %s/%s,%+v %s", t.conf.Name, w.Conf(), event, err)
 					continue
 				}
 			}
@@ -107,6 +123,18 @@ func (t *Task) SaveState() error {
 }
 
 func (t *Task) Stop() error {
+	if t.Status == StatusStopped {
+		logs.Error("task already stopped: %s", t.conf.Name)
+		return nil
+	}
 	_ = t.reader.Save()
-	return t.reader.Stop()
+	err := t.reader.Stop()
+	if err == nil {
+		t.Status = StatusStopped
+	}
+	return err
+}
+
+func (t *Task) Conf() config.Task {
+	return t.conf
 }

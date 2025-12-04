@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-func (s *PostgresReader) connect() {
+func (s *Reader) connect() {
+	if s.conn != nil {
+		_ = s.conn.Close(context.Background())
+	}
 	connector, err := config.GetConnector(s.conf.Connector)
 	if err != nil {
 		panic(err)
@@ -38,16 +41,16 @@ func (s *PostgresReader) connect() {
 	s.conn = conn
 }
 
-func (s *PostgresReader) prepare() error {
+func (s *Reader) prepare() error {
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM pg_publication WHERE pubname = $1)`
-	err := s.conn.QueryRow(s.ctx, query, s.conf.Extras[PostgresExtraPublicationName]).Scan(&exists)
+	err := s.conn.QueryRow(s.ctx, query, s.conf.Extras[ExtraPublicationName]).Scan(&exists)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		sql := fmt.Sprintf("CREATE PUBLICATION %s FOR TABLE %s",
-			s.conf.Extras[PostgresExtraPublicationName],
+			s.conf.Extras[ExtraPublicationName],
 			strings.Join(s.conf.Tables, ","),
 		)
 		_, err := s.conn.Exec(s.ctx, sql)
@@ -56,34 +59,34 @@ func (s *PostgresReader) prepare() error {
 		}
 	}
 
-	currentTables, err := getPublicationTables(s.ctx, s.conn, s.conf.Extras[PostgresExtraPublicationName])
+	currentTables, err := getPublicationTables(s.ctx, s.conn, s.conf.Extras[ExtraPublicationName])
 	if err != nil {
 		return err
 	}
 	needAlert, add, drop := compareTables(currentTables, s.conf.Tables)
 	if needAlert {
-		if err := alterPublicationTables(s.ctx, s.conn, s.conf.Extras[PostgresExtraPublicationName], add, drop); err != nil {
+		if err := alterPublicationTables(s.ctx, s.conn, s.conf.Extras[ExtraPublicationName], add, drop); err != nil {
 			return err
 		}
 	}
 	return s.prepareSlot()
 }
 
-func (s *PostgresReader) prepareSlot() error {
+func (s *Reader) prepareSlot() error {
 	var exists bool
 	err := s.conn.QueryRow(s.ctx, `
 		SELECT EXISTS(
 			SELECT 1 FROM pg_replication_slots 
 			WHERE slot_name = $1 AND slot_type = 'logical'
 		)
-	`, s.conf.Extras[PostgresExtraSlotName]).Scan(&exists)
+	`, s.conf.Extras[ExtraSlotName]).Scan(&exists)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		_, err := s.conn.Exec(s.ctx, fmt.Sprintf(
 			"SELECT pg_create_logical_replication_slot('%s', '%s')",
-			s.conf.Extras[PostgresExtraSlotName], "pgoutput",
+			s.conf.Extras[ExtraSlotName], "pgoutput",
 		))
 		if err != nil {
 			return err
@@ -92,17 +95,17 @@ func (s *PostgresReader) prepareSlot() error {
 	{
 		var currentLSN pglogrepl.LSN
 		query := `SELECT restart_lsn FROM pg_replication_slots WHERE slot_name = $1`
-		row := s.conn.QueryRow(s.ctx, query, s.conf.Extras[PostgresExtraSlotName])
+		row := s.conn.QueryRow(s.ctx, query, s.conf.Extras[ExtraSlotName])
 		_ = row.Scan(&currentLSN)
 		s.clientXLogPos = currentLSN
 	}
 	return nil
 }
 
-func (s *PostgresReader) start() error {
-	logs.Info("Starting Reader:%s from LSN %s\n", s.conf.Connector, s.clientXLogPos)
+func (s *Reader) start() error {
+	logs.Info("starting reader:%s from LSN %s\n", s.conf.Connector, s.clientXLogPos)
 	pluginArgs := []string{
-		fmt.Sprintf("publication_names '%s'", s.conf.Extras[PostgresExtraPublicationName]),
+		fmt.Sprintf("publication_names '%s'", s.conf.Extras[ExtraPublicationName]),
 		"proto_version '2'",
 		"messages 'true'",
 		"streaming 'true'",
@@ -110,7 +113,7 @@ func (s *PostgresReader) start() error {
 	err := pglogrepl.StartReplication(
 		s.ctx,
 		s.conn.PgConn(),
-		s.conf.Extras[PostgresExtraSlotName],
+		s.conf.Extras[ExtraSlotName],
 		s.clientXLogPos,
 		pglogrepl.StartReplicationOptions{
 			PluginArgs: pluginArgs,
@@ -145,7 +148,7 @@ func (s *PostgresReader) start() error {
 	}
 }
 
-func (s *PostgresReader) getState() pglogrepl.LSN {
+func (s *Reader) getState() pglogrepl.LSN {
 	var lsn pglogrepl.LSN
 	state := s.opt.StateLoader.Load()
 	if state != "" {

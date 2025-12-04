@@ -1,4 +1,4 @@
-package common_mysql
+package common
 
 import (
 	"github.com/imiskolee/anycdc/pkg/config"
@@ -10,7 +10,7 @@ import (
 
 func SyncSchema(connector config.Connector, s string, tableName string) schema.SimpleTableSchema {
 	logs.Info("starting sync schema from source database (%s), schema=%s,table=%s", connector, s, tableName)
-	conn, err := Connect(connector)
+	conn, err := ConnectMySQL(connector)
 	if err != nil {
 		return schema.SimpleTableSchema{}
 	}

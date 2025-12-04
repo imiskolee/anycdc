@@ -16,14 +16,19 @@ connectors:
   - alias: test_mysql_1
     type: mysql
     host: 127.0.0.1
-    port: 13306
+    port: 23306
     username: root
     password: anycdc
     database: anycdc_test
   - alias: test_mysql_2
     type: mysql
     host: 127.0.0.1
-    port: 13307
+    port: 23307
     username: root
     password: anycdc
+    database: anycdc_test
+  - alias: test_es_1
+    type: elasticsearch
+    host: 127.0.0.1
+    port: 9000
     database: anycdc_test

@@ -12,9 +12,8 @@ var oidTypeMap = map[entry.Type][]uint32{
 	entry.TypeString:    {pgtype.VarcharOID, pgtype.QCharOID, pgtype.BPCharOID, pgtype.TextOID},
 	entry.TypeBoolean:   {pgtype.BoolOID},
 	entry.TypeJSON:      {pgtype.JSONOID},
-	entry.TypeDate:      {pgtype.DateOID},
 	entry.TypeTime:      {pgtype.TimeOID},
-	entry.TypeTimestamp: {pgtype.TimestampOID, pgtype.TimestamptzOID},
+	entry.TypeTimestamp: {pgtype.TimestampOID, pgtype.TimestamptzOID, pgtype.DateOID},
 }
 
 func getBuiltInType(oID uint32) entry.Type {

@@ -29,7 +29,7 @@ func getBuiltType(mysqlType string) entry.Type {
 	return entry.TypeUnknown
 }
 
-func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
+func (s *Reader) handle(binlog *replication.BinlogEvent) error {
 	connector, _ := config.GetConnector(s.conf.Connector)
 	switch binlog.Header.EventType {
 	case replication.WRITE_ROWS_EVENTv2, replication.UPDATE_ROWS_EVENTv2:
@@ -82,10 +82,10 @@ func (s *MySQLReader) handle(binlog *replication.BinlogEvent) error {
 	return nil
 }
 
-func (s *MySQLReader) rowsToEntry(binlog *replication.RowsEvent) []map[string]interface{} {
+func (s *Reader) rowsToEntry(binlog *replication.RowsEvent) []map[string]interface{} {
 	schema, err := s.schema.GetTable(string(binlog.Table.Schema), string(binlog.Table.Table))
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	var records []map[string]interface{}
 	for _, row := range binlog.Rows {

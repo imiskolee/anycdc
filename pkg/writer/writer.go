@@ -17,6 +17,7 @@ func Register(t config.ConnectorType, factory func(writer config.Writer) Writer)
 type Writer interface {
 	Prepare() error
 	Execute(event event.Event) error
+	Conf() config.Writer
 }
 
 func NewWriter(conf config.Writer) Writer {

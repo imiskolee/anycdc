@@ -49,7 +49,7 @@ func insertEventToSQL(event event.Event, fieldWrapper string) (string, []interfa
 
 	// 拼接 SQL
 	insertSQL := fmt.Sprintf(
-		"INSERT INTO %s%s%s (%s) VALUES (%s) %s %s",
+		"INSERT INTO %s%s%s (%s) VALUES (%s) %s %s;",
 		fieldWrapper,
 		event.Table,
 		fieldWrapper,

@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	PostgresExtraPublicationName = "publication_name"
-	PostgresExtraSlotName        = "slot_name"
+	ExtraPublicationName = "publication_name"
+	ExtraSlotName        = "slot_name"
 )
 
 func init() {
-	reader.Register(config.ConnectorTypePostgres, NewPostgresReader)
+	reader.Register(config.ConnectorTypePostgres, NewReader)
 }
 
-type PostgresReader struct {
+type Reader struct {
 	conf          config.Reader
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -30,14 +30,10 @@ type PostgresReader struct {
 	typeMap       *pgtype.Map
 }
 
-func registerTypes(typ *pgtype.Map) {
-
-}
-
-func NewPostgresReader(conf config.Reader, options *reader.ReaderOptions) reader.Reader {
+func NewReader(conf config.Reader, options *reader.ReaderOptions) reader.Reader {
 	ctx, cancel := context.WithCancel(context.TODO())
 
-	return &PostgresReader{
+	return &Reader{
 		conf:      conf,
 		ctx:       ctx,
 		cancel:    cancel,
@@ -47,21 +43,21 @@ func NewPostgresReader(conf config.Reader, options *reader.ReaderOptions) reader
 	}
 }
 
-func (s *PostgresReader) Prepare() error {
+func (s *Reader) Prepare() error {
 	s.connect()
 	return s.prepare()
 }
 
-func (s *PostgresReader) Start() error {
+func (s *Reader) Start() error {
 	return s.start()
 }
 
-func (s *PostgresReader) Stop() error {
+func (s *Reader) Stop() error {
 	s.cancel()
 	return nil
 }
 
-func (s *PostgresReader) Save() error {
+func (s *Reader) Save() error {
 	j, _ := json.Marshal(s.clientXLogPos)
 	return s.opt.StateLoader.Save(string(j))
 }

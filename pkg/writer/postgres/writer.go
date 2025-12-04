@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"fmt"
+	"github.com/imiskolee/anycdc/pkg/common"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/entry"
 	"github.com/imiskolee/anycdc/pkg/event"
@@ -9,14 +9,12 @@ import (
 	"github.com/imiskolee/anycdc/pkg/schema"
 	"github.com/imiskolee/anycdc/pkg/writer"
 	"github.com/imiskolee/anycdc/pkg/writer/common_rds"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"sync"
 	"time"
 )
 
-type PostgresWriter struct {
+type Writer struct {
 	conf    config.Writer
 	schemas map[string]schema.SimpleTableSchema
 	mutex   sync.Mutex
@@ -24,28 +22,25 @@ type PostgresWriter struct {
 }
 
 func init() {
-	writer.Register(config.ConnectorTypePostgres, NewPostgresWriter)
+	writer.Register(config.ConnectorTypePostgres, NewWriter)
 }
 
-func NewPostgresWriter(conf config.Writer) writer.Writer {
-	return &PostgresWriter{
+func NewWriter(conf config.Writer) writer.Writer {
+	return &Writer{
 		conf:    conf,
 		schemas: make(map[string]schema.SimpleTableSchema),
 	}
 }
 
-func (s *PostgresWriter) Prepare() error {
+func (s *Writer) Prepare() error {
+	if s.conn != nil {
+		db, _ := s.conn.DB()
+		if db != nil {
+			_ = db.Close()
+		}
+	}
 	connector, _ := config.GetConnector(s.conf.Connector)
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		connector.Host,
-		connector.Port,
-		connector.Username,
-		connector.Password,
-		connector.Database,
-	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	db, err := common.ConnectPostgres(connector)
 	if err != nil {
 		return err
 	}
@@ -53,7 +48,7 @@ func (s *PostgresWriter) Prepare() error {
 	return nil
 }
 
-func (s *PostgresWriter) Execute(event event.Event) error {
+func (s *Writer) Execute(event event.Event) error {
 	if err := s.triggerSyncSchema(event.Table); err != nil {
 		return err
 	}
@@ -65,10 +60,11 @@ func (s *PostgresWriter) Execute(event event.Event) error {
 	newEvent.Payload = common_rds.Convert(newEvent.Payload)
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
 	sql, params := writer.EventToSQL(newEvent, "\"")
+
 	return s.conn.Exec(sql, params...).Error
 }
 
-func (s *PostgresWriter) syncSchema(tableName string) (schema.SimpleTableSchema, error) {
+func (s *Writer) syncSchema(tableName string) (schema.SimpleTableSchema, error) {
 	sql := `
 SELECT
   a.attname AS column_name,
@@ -105,7 +101,7 @@ ORDER BY a.attnum;
 	return ss, nil
 }
 
-func (s *PostgresWriter) triggerSyncSchema(tableName string) error {
+func (s *Writer) triggerSyncSchema(tableName string) error {
 	schema, ok := s.schemas[tableName]
 	if !ok || time.Now().Sub(schema.LastSyncAt) > (10*time.Minute) {
 		ss, err := s.syncSchema(tableName)
@@ -115,4 +111,8 @@ func (s *PostgresWriter) triggerSyncSchema(tableName string) error {
 		s.schemas[tableName] = ss
 	}
 	return nil
+}
+
+func (s *Writer) Conf() config.Writer {
+	return s.conf
 }

@@ -1,10 +1,12 @@
 package mysql
 
 import (
-	"github.com/imiskolee/anycdc/pkg/common_mysql"
+	"fmt"
+	"github.com/imiskolee/anycdc/pkg/common"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/entry"
 	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/schema"
 	"github.com/imiskolee/anycdc/pkg/writer"
 	"github.com/imiskolee/anycdc/pkg/writer/common_rds"
@@ -13,26 +15,32 @@ import (
 )
 
 func init() {
-	writer.Register(config.ConnectorTypeMySQL, NewMySQLWriter)
+	writer.Register(config.ConnectorTypeMySQL, NewWriter)
 }
 
-type MySQLWriter struct {
+type Writer struct {
 	conf   config.Writer
 	schema *schema.Manager
 	mutex  sync.Mutex
 	conn   *gorm.DB
 }
 
-func NewMySQLWriter(conf config.Writer) writer.Writer {
-	return &MySQLWriter{
+func NewWriter(conf config.Writer) writer.Writer {
+	return &Writer{
 		conf:   conf,
-		schema: schema.NewManager(conf.Connector, common_mysql.SyncSchema),
+		schema: schema.NewManager(conf.Connector, common.SyncSchema),
 	}
 }
 
-func (s *MySQLWriter) Prepare() error {
+func (s *Writer) Prepare() error {
+	if s.conn != nil {
+		db, _ := s.conn.DB()
+		if db != nil {
+			_ = db.Close()
+		}
+	}
 	connector, _ := config.GetConnector(s.conf.Connector)
-	db, err := common_mysql.Connect(connector)
+	db, err := common.ConnectMySQL(connector)
 	if err != nil {
 		return err
 	}
@@ -40,8 +48,12 @@ func (s *MySQLWriter) Prepare() error {
 	return nil
 }
 
-func (s *MySQLWriter) Execute(event event.Event) error {
-	schema, _ := s.schema.GetTable(event.Schema, event.Table)
+func (s *Writer) Execute(event event.Event) error {
+	connector, _ := config.GetConnector(s.conf.Connector)
+	schema, err := s.schema.GetTable(connector.Database, event.Table)
+	if err != nil {
+		return logs.Errorf("can not get schema from source: %v", s.conf.Connector)
+	}
 	newEvent := event.Copy()
 	newEvent.Payload = common_rds.Convert(newEvent.Payload)
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
@@ -49,5 +61,10 @@ func (s *MySQLWriter) Execute(event event.Event) error {
 		newEvent.PrimaryKeyValue, _ = common_rds.ConvertBuiltInTypedData(newEvent.PrimaryKeyValue.(entry.TypedData))
 	}
 	sql, params := writer.EventToSQL(newEvent, "`")
+	fmt.Println("MySQL", sql, params)
 	return s.conn.Exec(sql, params...).Error
+}
+
+func (s *Writer) Conf() config.Writer {
+	return s.conf
 }

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -29,7 +30,7 @@ func printHeader() {
 
 func main() {
 	printHeader()
-	var tasks []*task.Task
+	InitWebServer()
 	var rootDir string
 	flag.StringVar(&rootDir, "config-dir", "./", "root config dir")
 	flag.Parse()
@@ -40,26 +41,24 @@ func main() {
 	}
 	for _, t := range config.G.Tasks {
 		tt := task.NewTask(t)
-		if err := tt.Prepare(); err != nil {
-			panic(err)
-		}
-		tasks = append(tasks, tt)
-		R.wg.Add(1)
-		go (func() {
-			if err := tt.Start(); err != nil {
-				panic(err)
+		R.Tasks[tt.Conf().Path] = tt
+		go (func(t string) {
+			err := R.TaskStart(t)
+			if err != nil {
+				logs.Error("start task failed,err:", err)
 			}
-			R.wg.Done()
-		})()
+		})(t.Name)
 	}
-	R.Tasks = tasks
+
 	go StateSyncJob()
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGHUP)
-
+	var wait sync.WaitGroup
+	wait.Add(1)
 	select {
 	case <-sigChan:
 		R.Stop()
+		wait.Done()
 		timeout := 30 * time.Second
 		select {
 		case <-time.After(timeout):
@@ -68,6 +67,6 @@ func main() {
 		default:
 		}
 	}
-	R.wg.Wait()
 	time.Sleep(1 * time.Second)
+	wait.Wait()
 }

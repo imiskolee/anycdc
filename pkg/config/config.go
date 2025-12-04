@@ -19,9 +19,14 @@ const (
 	LogLevelError = "error"
 )
 
+type Admin struct {
+	Listen string `yaml:"listen;default=:9999"`
+}
+
 type BaseConfig struct {
 	DataDir  string `yaml:"data_dir"`
 	LogLevel string `yaml:"log_level;default=info"`
+	Admin    Admin  `yaml:"admin"`
 }
 
 type Config struct {
@@ -94,6 +99,7 @@ func Parse(dir string) error {
 			logs.Error("duplicate tasks, already define task %s before.", task.Name)
 			return nil
 		}
+		task.Path = path
 		taskMap[task.Name] = true
 		G.Tasks = append(G.Tasks, task)
 		return nil

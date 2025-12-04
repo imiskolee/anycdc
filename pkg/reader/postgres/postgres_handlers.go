@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"github.com/imiskolee/anycdc/pkg/event"
+	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"log"
 )
 
-func (s *PostgresReader) handler(msg pgproto3.BackendMessage) error {
+func (s *Reader) handler(msg pgproto3.BackendMessage) error {
 	switch msg := msg.(type) {
 	case *pgproto3.CopyData:
 		switch msg.Data[0] {
@@ -22,7 +23,7 @@ func (s *PostgresReader) handler(msg pgproto3.BackendMessage) error {
 	return nil
 }
 
-func (s *PostgresReader) handlePrimaryKeepaliveMessage(msg *pgproto3.CopyData) {
+func (s *Reader) handlePrimaryKeepaliveMessage(msg *pgproto3.CopyData) {
 	/*
 		pkm, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
 		if err != nil {
@@ -34,7 +35,7 @@ func (s *PostgresReader) handlePrimaryKeepaliveMessage(msg *pgproto3.CopyData) {
 	*/
 }
 
-func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) error {
+func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 	xld, err := pglogrepl.ParseXLogData(msg.Data[1:])
 	if err != nil {
 		log.Fatalln("ParseXLogData failed:", err)
@@ -106,7 +107,7 @@ func (s *PostgresReader) handleXLogData(msg *pgproto3.CopyData) error {
 	return nil
 }
 
-func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.TupleDataColumn) map[string]interface{} {
+func (s *Reader) convertDataMap(relationID uint32, columns []*pglogrepl.TupleDataColumn) map[string]interface{} {
 	values := map[string]interface{}{}
 	rel := s.relations[relationID]
 	for idx, col := range columns {
@@ -115,6 +116,7 @@ func (s *PostgresReader) convertDataMap(relationID uint32, columns []*pglogrepl.
 		case pglogrepl.TupleDataTypeToast, pglogrepl.TupleDataTypeText:
 			val, err := convertToTypedData(s.typeMap, rel.Columns[idx].DataType, col.Data)
 			if err != nil {
+				logs.Error("can not convert ")
 				panic(err)
 			}
 			values[colName] = val

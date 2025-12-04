@@ -10,7 +10,7 @@ var z *zap.Logger
 
 func init() {
 	config := zap.NewProductionConfig()
-	config.DisableCaller = true
+	config.DisableCaller = false
 	config.Encoding = "console"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	z, _ = config.Build()
@@ -30,4 +30,10 @@ func Warn(f string, args ...interface{}) {
 
 func Error(f string, args ...interface{}) {
 	z.Error(fmt.Sprintf(f, args...))
+}
+
+func Errorf(f string, args ...interface{}) error {
+	err := fmt.Errorf(f, args...)
+	z.Error(err.Error())
+	return err
 }

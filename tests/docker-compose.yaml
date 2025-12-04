@@ -40,7 +40,7 @@ services:
       MYSQL_ROOT_PASSWORD: anycdc
       MYSQL_DATABASE: anycdc_test
     ports:
-      - "13306:3306"
+      - "23306:3306"
     command: >
       --server-id=1 
       --log-bin=mysql-bin 
@@ -56,7 +56,7 @@ services:
       MYSQL_ROOT_PASSWORD: anycdc
       MYSQL_DATABASE: anycdc_test
     ports:
-      - "13307:3306"
+      - "23307:3306"
     command: >
       --server-id=1 
       --log-bin=mysql-bin 

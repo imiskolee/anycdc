@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/replication"
-	"github.com/imiskolee/anycdc/pkg/common_mysql"
+	"github.com/imiskolee/anycdc/pkg/common"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/logs"
 	"github.com/imiskolee/anycdc/pkg/reader"
@@ -19,10 +19,10 @@ const (
 )
 
 func init() {
-	reader.Register(config.ConnectorTypeMySQL, NewMySQLReader)
+	reader.Register(config.ConnectorTypeMySQL, NewReader)
 }
 
-type MySQLReader struct {
+type Reader struct {
 	conf       config.Reader
 	schema     *schema.Manager
 	opt        reader.ReaderOptions
@@ -33,18 +33,18 @@ type MySQLReader struct {
 	cancel     context.CancelFunc
 }
 
-func NewMySQLReader(conf config.Reader, opt *reader.ReaderOptions) reader.Reader {
+func NewReader(conf config.Reader, opt *reader.ReaderOptions) reader.Reader {
 	ctx, cancel := context.WithCancel(context.TODO())
-	return &MySQLReader{
+	return &Reader{
 		conf:   conf,
 		opt:    *opt,
 		ctx:    ctx,
 		cancel: cancel,
-		schema: schema.NewManager(conf.Connector, common_mysql.SyncSchema),
+		schema: schema.NewManager(conf.Connector, common.SyncSchema),
 	}
 }
 
-func (s *MySQLReader) connect() {
+func (s *Reader) connect() {
 	connector, _ := config.GetConnector(s.conf.Connector)
 	serverID, _ := strconv.ParseInt(s.conf.Extras[extraParamServerID], 10, 64)
 	s.binlogCfg = replication.BinlogSyncerConfig{
@@ -62,19 +62,18 @@ func (s *MySQLReader) connect() {
 	}
 }
 
-func (s *MySQLReader) Prepare() error {
+func (s *Reader) Prepare() error {
 	s.connect()
 	return nil
 }
 
-func (s *MySQLReader) Start() error {
+func (s *Reader) Start() error {
 	s.syncer = replication.NewBinlogSyncer(s.binlogCfg)
 	defer s.syncer.Close()
 	streamer, err := s.syncer.StartSync(s.getPosition())
 	if err != nil {
 		return err
 	}
-
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -96,11 +95,11 @@ func (s *MySQLReader) Start() error {
 	}
 }
 
-func (s *MySQLReader) getPosition() mysql.Position {
+func (s *Reader) getPosition() mysql.Position {
 	pos := s.reloadState()
 	if pos.Name == "" {
 		c, _ := config.GetConnector(s.conf.Connector)
-		conn, _ := common_mysql.Connect(c)
+		conn, _ := common.ConnectMySQL(c)
 		{
 			var ret []struct {
 				File string `gorm:"column:File"`
@@ -115,26 +114,27 @@ func (s *MySQLReader) getPosition() mysql.Position {
 			}
 		}
 	}
+	s.currentPos = pos
 	return pos
 }
 
-func (s *MySQLReader) reloadState() mysql.Position {
+func (s *Reader) reloadState() mysql.Position {
 	var pos mysql.Position
 	state := s.opt.StateLoader.Load()
 	if state != "" {
 		if err := json.Unmarshal([]byte(state), &pos); err != nil {
-			panic("Can not load state:" + err.Error())
+
 		}
 	}
 	return pos
 }
 
-func (s *MySQLReader) Stop() error {
+func (s *Reader) Stop() error {
 	s.cancel()
 	return nil
 }
 
-func (s *MySQLReader) Save() error {
+func (s *Reader) Save() error {
 	j, _ := json.Marshal(s.currentPos)
 	return s.opt.StateLoader.Save(string(j))
 }
