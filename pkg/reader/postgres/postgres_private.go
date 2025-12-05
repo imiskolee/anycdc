@@ -107,7 +107,6 @@ func (s *Reader) start() error {
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", s.conf.Extras[ExtraPublicationName]),
 		"proto_version '2'",
-		"streaming 'true'",
 	}
 	err := pglogrepl.StartReplication(
 		s.ctx,

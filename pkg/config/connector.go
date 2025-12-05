@@ -11,14 +11,15 @@ const (
 )
 
 type Connector struct {
-	Type     ConnectorType     `yaml:"type"`
-	Alias    string            `yaml:"alias"`
-	Host     string            `yaml:"host"`
-	Port     int               `yaml:"port"`
-	Username string            `yaml:"username"`
-	Password string            `yaml:"password"`
-	Database string            `yaml:"database"`
-	Extras   map[string]string `yaml:"extras"`
+	ID       string            `gorm:"column:id;PRIMARY_KEY"`
+	Type     ConnectorType     `yaml:"type" gorm:"column:type;varchar(32)"`
+	Alias    string            `yaml:"alias" gorm:"column:alias:varchar(32)"`
+	Host     string            `yaml:"host" gorm:"column:host:varchar(256)"`
+	Port     int               `yaml:"port" gorm:"column:port:int"`
+	Username string            `yaml:"username" gorm:"column:username;type:varchar(255)"`
+	Password string            `yaml:"password" gorm:"column:password;type:varchar(255)"`
+	Database string            `yaml:"database" gorm:"column:database;type:varchar(255)"`
+	Extras   map[string]string `yaml:"extras" gorm:"column:extras;type:JSON;"`
 }
 
 func (s Connector) String() string {
