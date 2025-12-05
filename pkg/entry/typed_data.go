@@ -2,6 +2,11 @@ package entry
 
 type Type int
 
+type Typed interface {
+	Unmarshal(v any) error
+	Marshal() interface{}
+}
+
 const (
 	TypeUnknown Type = iota
 	TypeNumeric
@@ -16,7 +21,7 @@ const (
 
 type TypedData struct {
 	T Type
-	V interface{}
+	V any
 }
 
 func NewTypedData(t Type, v interface{}) TypedData {

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/entry"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -39,6 +40,14 @@ func convertToTypedData(mi *pgtype.Map, oID uint32, data []byte) (entry.TypedDat
 	val, err := ot.Codec.DecodeValue(mi, oID, pgtype.TextFormatCode, data)
 	if err != nil {
 		return entry.TypedData{}, fmt.Errorf("can not decode value %s from oid %d", data, oID)
+	}
+	if typ != entry.TypeString {
+		if valuer, ok := val.(driver.Valuer); ok {
+			v, err := valuer.Value()
+			if err == nil {
+				val = v
+			}
+		}
 	}
 	return entry.NewTypedData(typ, val), nil
 }

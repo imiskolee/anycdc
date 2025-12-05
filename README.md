@@ -19,7 +19,7 @@ The design encompasses the following key technical concepts:
 * **Writer:** A component responsible for writing data to the target.
 * **Task:** A synchronization task consisting of one reader and one or more writers. Each task is defined in a separate file under the tasks directory.
 
-## Supports Kind Of Databases
+## Supports Databases
 
 Here are the types of databases we plan to support:
 
@@ -32,60 +32,12 @@ Here are the types of databases we plan to support:
 |Clickhouse | N | Y |
 |Kafka | N | Y |
 
-## Get Started
 
-Download from docker hub
+## Development
 
-```bash
- docker pull hub.docker.io/imiskolee/anycdc:latest
-```
-Create conf files
-
-```yaml
-# conf/connectors.yaml
-
-connectors:
-  - name: <alias name>
-    type: postgres
-    host: <db host>
-    port: <db port>
-    username: <db_name>
-    password: <db_password>
-    database: <db_name>
-```
-
-```yaml
-# conf/tasks/example.yaml
-
-# sync all tables from reader.connector to writers.connector(2 destinations)
-name: <task_name>
-reader:
-  connector: <connector_name>
-  tables:
-    - table_1
-    - table_2
-    - sub_table_*
-    - *
-writers:
-  - connector: <connector_1_name>
-    destination_table_rule:
-      - prefix: prefix_ #add prefix_ to table name on destination.
-      - suffix: _suffix #add _suffix to table name on destination.
-    schema_check_rule: strict # strict means reader table schema need match to destination table scheme.
-  - connector: <connector_2_name>
-
-flush_rule:
-  interval: 10s #focus trigger writer(s) if now - last trigger > flush_rule.interval
-  batch_size: 100 # 100 records a batch
-```
-
-
-
-
-
-
-
-
+* Install golang 1.24.5+
+* Install docker & docker-compose
+* Run tests/prepare.sh
 
 
 
