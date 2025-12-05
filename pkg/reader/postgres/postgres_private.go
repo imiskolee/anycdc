@@ -106,7 +106,7 @@ func (s *Reader) start() error {
 	logs.Info("starting reader:%s from LSN %s\n", s.conf.Connector, s.clientXLogPos)
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", s.conf.Extras[ExtraPublicationName]),
-		"proto_version '2'",
+		"proto_version '1'",
 	}
 	err := pglogrepl.StartReplication(
 		s.ctx,
