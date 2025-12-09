@@ -288,7 +288,6 @@ func (s *Reader) convertDataMap(relationID uint32, columns []*pglogrepl.TupleDat
 		colName := rel.Columns[idx].Name
 		switch col.DataType {
 		case pglogrepl.TupleDataTypeToast, pglogrepl.TupleDataTypeText:
-			fmt.Println("Column Name", colName)
 			val := s.convertToTypedData(rel.Columns[idx].DataType, col.Data)
 			values[colName] = val
 			break
@@ -301,9 +300,7 @@ func (s *Reader) convertDataMap(relationID uint32, columns []*pglogrepl.TupleDat
 }
 
 func (s *Reader) convertToTypedData(oID uint32, data []byte) types.TypedData {
-	fmt.Println("Type,", oID)
 	typ := getBuiltInType(oID)
-	fmt.Println("Type,", typ)
 	if len(data) == 0 {
 		return types.NewNullTypedData(typ)
 	}

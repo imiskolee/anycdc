@@ -156,7 +156,6 @@ func ConvertToSQL(params []interface{}) []interface{} {
 	for _, p := range params {
 		switch v := p.(type) {
 		case types.TypedData:
-			fmt.Println("is typedData")
 			ps = append(ps, v.V)
 			break
 		case *types.TypedData:

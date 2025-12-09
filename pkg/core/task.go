@@ -38,7 +38,6 @@ func (s *Task) Prepare() error {
 	if err != nil {
 		return s.logger.Errorf("can not get reader connector by id %s,%s", s.id, err)
 	}
-	fmt.Println("extra", t.Extras)
 	extra := make(model.Extra)
 	if t.Extras != "" {
 		if err := json.Unmarshal([]byte(t.Extras), &extra); err != nil {

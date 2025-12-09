@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/go-mysql-org/go-mysql/replication"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/model"
@@ -69,7 +68,6 @@ func (s *Reader) start() {
 		s.opt.Logger.Error("failed to start syncer, %s", err.Error())
 		return
 	}
-	fmt.Println("Starting Sync...")
 	for {
 		select {
 		case <-s.ctx.Done():

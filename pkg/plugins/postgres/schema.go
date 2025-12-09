@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/model"
 )
@@ -12,7 +11,6 @@ type Schema struct {
 }
 
 func (s Schema) Get(dbname string, tableName string) *core.SimpleTableSchema {
-	fmt.Println("Connector ID", s.opt.Connector)
 	connector, err := model.GetConnectorByID(s.opt.Connector)
 
 	if err != nil {
@@ -27,22 +25,31 @@ func (s Schema) Get(dbname string, tableName string) *core.SimpleTableSchema {
 
 	sql := `
 SELECT
-  a.attname AS column_name,
-  t.typname AS data_type
-FROM pg_attribute a
-JOIN pg_class c ON a.attrelid = c.oid
-JOIN pg_type t ON a.atttypid = t.oid
+    pa.attname AS column_name,
+  t.typname AS data_type,
+    CASE
+        WHEN pc.contype = 'p' AND pa.attnum = ANY(pc.conkey) THEN true
+        ELSE false
+    END AS is_primary
+FROM pg_attribute pa
+JOIN pg_class pc_rel ON pa.attrelid = pc_rel.oid
+JOIN pg_type t ON pa.atttypid = t.oid
+LEFT JOIN pg_constraint pc
+    ON pc_rel.oid = pc.conrelid
+    AND pc.contype = 'p'
+    AND pa.attnum = ANY(pc.conkey)
 WHERE
-  c.relname = ?
-  AND c.relnamespace = 'public'::regnamespace
-  AND a.attnum > 0
-  AND NOT a.attisdropped
-ORDER BY a.attnum;
+    pc_rel.relname = ?
+    AND pc_rel.relnamespace = 'public'::regnamespace
+    AND pa.attnum > 0 
+    AND NOT pa.attisdropped
+ORDER BY pa.attnum;
 `
 
 	var fields []struct {
 		ColumnName string `gorm:"column:column_name"`
 		DataType   string `gorm:"column:data_type"`
+		IsPrimary  bool   `gorm:"column:is_primary"`
 	}
 	if err := conn.Raw(sql, tableName).Scan(&fields).Error; err != nil {
 		core.SysLogger.Error("can not get schema information, %s", connector.ID)
@@ -53,7 +60,9 @@ ORDER BY a.attnum;
 	}
 	for _, field := range fields {
 		ss.Fields = append(ss.Fields, core.SimpleField{
-			Name: field.ColumnName,
+			Name:         field.ColumnName,
+			Type:         field.DataType,
+			IsPrimaryKey: field.IsPrimary,
 		})
 	}
 	return &ss

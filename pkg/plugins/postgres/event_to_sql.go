@@ -27,7 +27,6 @@ func insertToSQL(e *core.Event) (string, []interface{}) {
 
 	columns := make([]string, 0, len(e.Payload))
 	values := make([]interface{}, 0, len(e.Payload))
-	fmt.Println(len(e.Payload), len(e.PrimaryKeys))
 	updateValues := make([]interface{}, 0, len(e.Payload)-len(e.PrimaryKeys))
 	updateClauses := make([]string, 0, len(e.Payload)-len(e.PrimaryKeys))
 
@@ -80,6 +79,7 @@ func updateToSQL(e *core.Event) (string, []interface{}) {
 		isPK := false
 		for _, pk := range e.PrimaryKeys {
 			if pk.Name == col {
+				isPK = true
 				break
 			}
 		}
@@ -96,7 +96,7 @@ func updateToSQL(e *core.Event) (string, []interface{}) {
 		sqlQuote,
 		e.Table,
 		sqlQuote,
-		strings.Join(whereClauses, ", "),
+		strings.Join(setClauses, ", "),
 		strings.Join(whereClauses, " AND "),
 	)
 	return updateSQL, common_sql.ConvertToSQL(append(params, whereValues...))
