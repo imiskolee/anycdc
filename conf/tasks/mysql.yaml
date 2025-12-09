@@ -1,0 +1,11 @@
+# sync all tables from reader.connector to writers.connector(2 destinations)
+name: mysql_task_1
+reader:
+  connector: test_mysql_1
+  extras:
+    server_id: 101
+  tables:
+    - field_types
+writers:
+  - connector: test_mysql_2
+  - connector: test_pg_2

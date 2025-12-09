@@ -1,0 +1,18 @@
+.description {
+  color:#666;
+  font-size:14px;
+  font-weight: 100;
+}
+
+.form {
+  max-width:800px;
+  background:#fff;
+  padding:20px;
+  margin:0 auto;
+  margin-top:20px;
+  border-radius: 8px;
+}
+
+.action-groups>* {
+  padding-right:4px;
+}
