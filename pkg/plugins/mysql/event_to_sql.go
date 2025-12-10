@@ -90,7 +90,7 @@ func updateToSQL(e *core.Event) (string, []interface{}) {
 		sqlQuote,
 		e.Table,
 		sqlQuote,
-		strings.Join(whereClauses, ", "),
+		strings.Join(setClauses, ", "),
 		strings.Join(whereClauses, " AND "),
 	)
 	return updateSQL, common_sql.ConvertToSQL(append(params, whereValues...))
