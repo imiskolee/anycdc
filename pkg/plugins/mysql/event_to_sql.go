@@ -73,6 +73,7 @@ func updateToSQL(e *core.Event) (string, []interface{}) {
 		isPK := false
 		for _, pk := range e.PrimaryKeys {
 			if pk.Name == col {
+				isPK = true
 				break
 			}
 		}
