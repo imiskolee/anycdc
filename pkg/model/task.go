@@ -34,7 +34,7 @@ type Task struct {
 	MetricDeleteCount             uint64     `gorm:"column:metric_delete_count;type:bigint;default:0" json:"metric_delete_count"`
 	MetricInsertCountSinceStarted uint64     `gorm:"column:metric_insert_count_since_started;type:bigint;default:0" json:"metric_insert_count_since_started"`
 	MetricUpdateCountSinceStarted uint64     `gorm:"column:metric_update_count_since_started;type:bigint;default:0" json:"metric_update_count_since_started"`
-	MetricDeleteCountSinceStarted uint64     `gorm:"column:metric_delete_count_since_started;type:bigint:default:0" json:"metric_delete_count_since_started"`
+	MetricDeleteCountSinceStarted uint64     `gorm:"column:metric_delete_count_since_started;type:bigint;default:0" json:"metric_delete_count_since_started"`
 	Status                        string     `gorm:"column:status;type:varchar(255)" json:"status"`
 }
 
