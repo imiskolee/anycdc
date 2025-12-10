@@ -2,7 +2,7 @@ data_dir: .
 log_dir: ./logs
 log_level: debug
 admin:
-  listen: :8970
+  listen: :8971
   database:
     type: postgres
     host: 127.0.0.1

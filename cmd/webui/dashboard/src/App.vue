@@ -3,7 +3,7 @@
     <a-layout-header class="admin-header" theme="dark">
       <div class="flex" style="display: flex">
         <div>
-          <img src="@/assets/icon.svg" width="60px;">
+          <img src="/icon.svg" width="60px;">
         </div>
         <div><h2 class="header-title">AnyCDC Dashboard</h2><</div>
       </div>
