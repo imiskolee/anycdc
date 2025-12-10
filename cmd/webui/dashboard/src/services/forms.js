@@ -102,6 +102,22 @@
             hiddenOnList : true,
         },
         {
+            name : "info",
+            type: "string",
+            readonly: true,
+            tips: "I = Insert, U = Updated, D = Deleted"
+        },
+        {
+            name : "current_pos",
+            type: "string",
+            readonly: true
+        },
+        {
+            name : "status",
+            "type" : "string",
+            readonly: true,
+        },
+        {
             name : "batch_size",
             "type" : "number",
             hiddenOnList : true,

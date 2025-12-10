@@ -79,7 +79,8 @@ func (s *Task) Prepare() error {
 }
 
 func (s *Task) Start() error {
-	return s.Reader.Start()
+	err := s.Reader.Start()
+	return err
 }
 
 func (s *Task) Stop() error {

@@ -46,15 +46,15 @@ func NewFileLog(path string) *FileLogger {
 		CallerKey:    "caller",
 		MessageKey:   "msg",
 		LineEnding:   zapcore.DefaultLineEnding,
-		EncodeLevel:  zapcore.CapitalColorLevelEncoder,                       // 带颜色的级别（控制台友好）
-		EncodeTime:   zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000"), // 自定义时间格式
+		EncodeLevel:  zapcore.CapitalLevelEncoder,                        // 带颜色的级别（控制台友好）
+		EncodeTime:   zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05"), // 自定义时间格式
 		EncodeCaller: zapcore.ShortCallerEncoder,
 	}
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), writer, zapcore.DebugLevel)
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), writer, zapcore.DebugLevel)
 	logger := zap.New(
 		core,
 		zap.AddCaller(),
-		zap.AddCallerSkip(2),
+		zap.AddCallerSkip(1),
 		zap.AddStacktrace(zap.ErrorLevel), // Error 级别打印栈追踪
 	)
 	return &FileLogger{

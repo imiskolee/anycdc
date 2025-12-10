@@ -7,7 +7,7 @@
       object-name="tasks"
   ></table-page>
   <a-modal v-model:open="openLogs" style="width:80%">
-    <log-group />
+    <log-group type="tasks" :object-id="currentTaskID" :key="currentTaskID"/>
   </a-modal>
 </template>
 
@@ -15,85 +15,50 @@
 import TablePage from "../components/TablePage.vue";
 import LogGroup from "../components/LogGroup.vue";
 import { ref } from 'vue';
+
+import {APISDK} from "../services/api.js";
+const sdk = new APISDK({})
+
 let openLogs = ref(false);
+let currentTaskID = ref("")
 
-const data = [
-  {
-    id: "0000-00000000-0000-000000000001",
-    name: "test_pg_task_1",
-    reader: "test_pg_1",
-    writers : "test_pg_2 / test_mysql_1",
-    status : "Active",
-    delay : "~10s",
-    processed : "100,021,023 rows / 4 tables",
-    created_at : "2025-01-01 00:00:00",
-  },
-  {
-    id: "0000-00000000-0000-000000000001",
-    name: "test_pg_task_1",
-    reader: "test_pg_1",
-    writers : "test_pg_2 / test_mysql_1",
-    status : "Active",
-    delay : "~10s",
-    processed : "100,021,023 rows / 4 tables",
-    created_at : "2025-01-01 00:00:00",
-  },
-  {
-    id: "0000-00000000-0000-000000000001",
-    name: "test_pg_task_1",
-    reader: "test_pg_1",
-    writers : "test_pg_2 / test_mysql_1",
-    status : "Active",
-    delay : "~10s",
-    processed : "100,021,023 rows / 4 tables",
-    created_at : "2025-01-01 00:00:00",
-  },
-  {
-    id: "0000-00000000-0000-000000000001",
-    name: "test_pg_task_1",
-    reader: "test_pg_1",
-    writers : "test_pg_2 / test_mysql_1",
-    status : "Active",
-    delay : "~10s",
-    processed : "100,021,023 rows / 4 tables",
-    created_at : "2025-01-01 00:00:00",
-  },
-  {
-    id: "0000-00000000-0000-000000000001",
-    name: "test_pg_task_1",
-    reader: "test_pg_1",
-    writers : "test_pg_2 / test_mysql_1",
-    status : "Active",
-    delay : "~10s",
-    processed : "100,021,023 rows / 4 tables",
-    created_at : "2025-01-01 00:00:00",
-  },
-  {
-    id: "0000-00000000-0000-000000000001",
-    name: "test_pg_task_1",
-    reader: "test_pg_1",
-    writers : "test_pg_2 / test_mysql_1",
-    status : "Active",
-    delay : "~10s",
-    processed : "100,021,023 rows / 4 tables",
-    created_at : "2025-01-01 00:00:00",
-  },
-]
-
-function handleLogs() {
-  openLogs.value = true
-  console.log("Open Logs...")
+function handleLogs(record) {
+  return async function()  {
+    currentTaskID.value = record.record['id']
+    openLogs.value = true
+  }
+}
+function handleStart(record) {
+  return function() {
+    console.log(record)
+    sdk.StartTask(record.record['id'])
+  }
 }
 
+function handleStop(record) {
+  return function() {
+    sdk.StopTask(record.record['id'])
+  }
+}
 const customRenders = {
   "__action__" : (record) => {
     return (
         <div class="action-groups">
-          <a onClick={handleLogs}>Logs</a>
-          <a href="#">Stop</a>
-          <a href="#">Delete</a>
+          <a onClick={handleLogs(record)}>Logs</a>
+          {record.record.status !== 'Running' && <a onClick={handleStart(record)}>Start</a>}
+          {record.record.status === 'Running' && <a onClick={handleStop(record)}>Stop</a>}
+          {record.record.status !== 'Running' && <a>Delete</a>}
         </div>
     )
+  },
+  'info' : (record) => {
+    return (<div>I <a>{record.record['metric_insert_count_since_started'] || 0}</a> /
+      U <a >{record.record['metric_update_count_since_started'] || 0 }</a> /
+      D <a>{record.record['metric_delete_count_since_started'] || 0 }</a>
+    </div>)
+  },
+  'current_pos' : (record) => {
+    return (<div>{record.record['last_position'] || 'null'}</div>)
   }
 }
 

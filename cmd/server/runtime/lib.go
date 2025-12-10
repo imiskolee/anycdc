@@ -16,7 +16,7 @@ type Runtime struct {
 
 func (s *Runtime) Prepare() error {
 	var tasks []model.Task
-	if err := model.DB().Find(&tasks).Error; err != nil {
+	if err := model.DB().Where("status = ?", model.TaskStatusRunning).Find(&tasks).Error; err != nil {
 		return err
 	}
 	s.Tasks = make(map[string]*core.Task)
@@ -33,12 +33,12 @@ func (s *Runtime) StartTask(id string) error {
 		time.Sleep(1 * time.Second)
 	}
 	t := core.NewTask(id)
+	if err := t.Prepare(); err != nil {
+		core.SysLogger.Error("can not prepare task:%s,%s", id, err)
+		return err
+	}
 	s.Tasks[id] = t
 	go (func() {
-		if err := t.Prepare(); err != nil {
-			core.SysLogger.Error("can not prepare task:%s,%s", id, err)
-			return
-		}
 		if err := t.Start(); err != nil {
 			core.SysLogger.Error("can not start task:%s,%s", id, err)
 		}

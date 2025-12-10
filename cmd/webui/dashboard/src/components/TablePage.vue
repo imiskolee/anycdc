@@ -77,17 +77,28 @@ async function initData() {
       if(formDefination[k]['hiddenOnList']) {
         continue
       }
+      const col = formDefination[k]['name']
       const item = {
-        title: formDefination[k]['name'],
-        dataIndex: formDefination[k]['name'],
-        key: formDefination[k]['name'],
+        title: col,
+        dataIndex: col,
+        key: col,
       }
-      if (props.customRenders && props.customRenders[k]) {
-        item['customRender'] = props.customRenders[k]
+
+      if(formDefination[k]['tips']) {
+        item['customRender'] = (a)=> {
+          return (
+              <a-tooltip placement="top" trigger="hover" title={item.tips}>
+                <span>{item.title}</span>
+                <a-icon type="info"/>
+              </a-tooltip>
+          )
+        }
       }
-      if (formDefination[k]['name'] === "name") {
+      if (props.customRenders && props.customRenders[col]) {
+        item['customRender'] = props.customRenders[col]
+      }
+      if (!item['customRender'] && col=== "name") {
         item['customRender'] = (a) => {
-          console.log(detailPrefix,a)
           const nav = detailPrefix + '/' + a.record['id']
           return (
               <a href={nav}>{a['value']}</a>

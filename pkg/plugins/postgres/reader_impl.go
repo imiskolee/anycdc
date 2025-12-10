@@ -176,7 +176,6 @@ func (s *Reader) start() error {
 }
 
 func (s *Reader) handler(msg pgproto3.BackendMessage) error {
-	s.opt.Logger.Debug("Starting parse msg +%v", msg)
 	switch msg := msg.(type) {
 	case *pgproto3.CopyData:
 		switch msg.Data[0] {

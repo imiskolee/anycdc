@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Metric struct {
 	Inserted         uint64
@@ -9,6 +12,11 @@ type Metric struct {
 	LastSyncAt       time.Time
 	LastSyncPosition string
 }
+
+const (
+	TaskStatusStopped = "Stopped"
+	TaskStatusRunning = "Running"
+)
 
 type Task struct {
 	Base
@@ -21,12 +29,13 @@ type Task struct {
 	LastPosition                  string     `gorm:"column:last_position;type:varchar(255)" json:"last_position"`
 	LastStarted                   *time.Time `gorm:"column:last_started;type:timestamp" json:"last_started"`
 	LastSyncedAt                  *time.Time `gorm:"column:last_synced_at;type:timestamp" json:"last_synced_at"`
-	MetricInsertCount             uint64     `gorm:"column:metric_insert_count;type:bigint" json:"metric_insert_count"`
-	MetricUpdateCount             uint64     `gorm:"column:metric_update_count;type:bigint" json:"metric_update_count"`
-	MetricDeleteCount             uint64     `gorm:"column:metric_delete_count;type:bigint" json:"metric_delete_count"`
-	MetricInsertCountSinceStarted uint64     `gorm:"column:metric_insert_count_since_started" json:"metric_insert_count_since_started"`
-	MetricUpdateCountSinceStarted uint64     `gorm:"column:metric_update_count_since_started" json:"metric_update_count_since_started"`
-	MetricDeleteCountSinceStarted uint64     `gorm:"column:metric_delete_count_since_started" json:"metric_delete_count_since_started"`
+	MetricInsertCount             uint64     `gorm:"column:metric_insert_count;type:bigint;default:0" json:"metric_insert_count"`
+	MetricUpdateCount             uint64     `gorm:"column:metric_update_count;type:bigint;default:0" json:"metric_update_count"`
+	MetricDeleteCount             uint64     `gorm:"column:metric_delete_count;type:bigint;default:0" json:"metric_delete_count"`
+	MetricInsertCountSinceStarted uint64     `gorm:"column:metric_insert_count_since_started;type:bigint;default:0" json:"metric_insert_count_since_started"`
+	MetricUpdateCountSinceStarted uint64     `gorm:"column:metric_update_count_since_started;type:bigint;default:0" json:"metric_update_count_since_started"`
+	MetricDeleteCountSinceStarted uint64     `gorm:"column:metric_delete_count_since_started;type:bigint:default:0" json:"metric_delete_count_since_started"`
+	Status                        string     `gorm:"column:status;type:varchar(255)" json:"status"`
 }
 
 func (s *Task) TableName() string {
@@ -52,6 +61,14 @@ func (s *Task) UpdateMetric(metric Metric) error {
 		).Error; err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *Task) UpdateStatus(status string) error {
+	fmt.Println("Starting Update Status")
+	if err := DB().Table(s.TableName()).Where("id = ?", s.ID).Update("status", status).Error; err != nil {
+		return err
 	}
 	return nil
 }

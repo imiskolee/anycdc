@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/model"
 	uuid "github.com/satori/go.uuid"
@@ -75,28 +74,4 @@ func ObjectList(ctx *gin.Context, name string) {
 		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not get object:%s", err).Error())
 	}
 	Success(ctx, name, records)
-}
-
-func Start() {
-	InitPlugins()
-
-	server.POST("/:object", func(ctx *gin.Context) {
-		ObjectCreate(ctx, ctx.Param("object"))
-	})
-	server.PUT("/:object/:id", func(ctx *gin.Context) {
-		ObjectUpdate(ctx, ctx.Param("object"))
-	})
-	server.DELETE("/:object/:id", func(ctx *gin.Context) {
-		ObjectDelete(ctx, ctx.Param("object"))
-	})
-	server.GET("/:object/:id", func(ctx *gin.Context) {
-		ObjectDetail(ctx, ctx.Param("object"))
-	})
-	server.GET("/:object", func(ctx *gin.Context) {
-		ObjectList(ctx, ctx.Param("object"))
-	})
-	core.SysLogger.Info("Starting API Server:%s", config.G.Admin.Listen)
-	if err := server.Run(config.G.Admin.Listen); err != nil {
-		core.SysLogger.Error("can not start api server:%s", err)
-	}
 }

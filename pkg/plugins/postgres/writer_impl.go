@@ -27,6 +27,10 @@ func (w *Writer) prepare() error {
 
 func (w *Writer) execute(e core.Event) error {
 	schema := w.schemaManager.Get(w.connector.Database, e.Table)
+	if len(schema.Fields) < 1 {
+		w.opt.Logger.Info("Skipped event, table %s do not exists on the connector", e.FullTableName())
+		return nil
+	}
 	newEvent := e
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
 	sql, params := eventToSQL(&newEvent)

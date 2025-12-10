@@ -163,6 +163,16 @@ export class APISDK {
         }
         return this._request(`/${tableName}`, 'GET');
     }
+
+    async StartTask(id )   {
+        return this._request(`/tasks/${id}/start`, 'PUT');
+    }
+    async StopTask(id )   {
+        return this._request(`/tasks/${id}/stop`, 'PUT');
+    }
+    async GetTaskLog(id) {
+        return this._request(`/tasks/${id}/logs`, 'GET');
+    }
 }
 
 // 导出 SDK（支持 Node.js/浏览器）
