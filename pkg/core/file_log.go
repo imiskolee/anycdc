@@ -3,9 +3,11 @@ package core
 import (
 	"errors"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -20,16 +22,17 @@ func init() {
 	SysLogger = NewFileLog("")
 }
 
-func NewFileLog(path string) *FileLogger {
+func NewFileLog(p string) *FileLogger {
 	var writer zapcore.WriteSyncer
-	if path != "" {
-		dir := filepath.Dir(path)
+	if p != "" {
+		fullPath := path.Join(config.G.DataDir, p)
+		dir := filepath.Dir(fullPath)
 		// Step 3: Create directory (and parents) if it doesn't exist
 		if err := os.MkdirAll(dir, 0644); err != nil {
 			panic(err)
 		}
 		logFile, err := os.OpenFile(
-			path,                                // 日志文件路径
+			fullPath,                            // 日志文件路径
 			os.O_CREATE|os.O_WRONLY|os.O_APPEND, // 模式：创建+写入+追加
 			0644,                                // 文件权限
 		)
@@ -58,7 +61,7 @@ func NewFileLog(path string) *FileLogger {
 		zap.AddStacktrace(zap.ErrorLevel), // Error 级别打印栈追踪
 	)
 	return &FileLogger{
-		path: path,
+		path: p,
 		z:    logger,
 	}
 }
