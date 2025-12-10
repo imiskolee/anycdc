@@ -30,7 +30,6 @@ function handleLogs(record) {
 }
 function handleStart(record) {
   return function() {
-    console.log(record)
     sdk.StartTask(record.record['id'])
   }
 }
@@ -40,6 +39,14 @@ function handleStop(record) {
     sdk.StopTask(record.record['id'])
   }
 }
+
+function handleDelete(record) {
+  return async function() {
+    await sdk.Delete("tasks",record.record["id"])
+    window.location.reload();
+  }
+}
+
 const customRenders = {
   "__action__" : (record) => {
     return (
@@ -47,7 +54,7 @@ const customRenders = {
           <a onClick={handleLogs(record)}>Logs</a>
           {record.record.status !== 'Running' && <a onClick={handleStart(record)}>Start</a>}
           {record.record.status === 'Running' && <a onClick={handleStop(record)}>Stop</a>}
-          {record.record.status !== 'Running' && <a>Delete</a>}
+          {record.record.status !== 'Running' && <a onClick={handleDelete(record)}>Delete</a>}
         </div>
     )
   },
