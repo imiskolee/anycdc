@@ -1,11 +1,13 @@
 ## Why AnyCDC
 
+
+![Intro](docs/intro.png)
+
 AnyCDC is a software designed for high-performance real-time heterogeneous database synchronization. 
 It enables real-time data synchronization between different (or the same) databases through simple file configuration (in YAML format).
 
 * **Real-Time Synchronization:** Leverages the native Event Streaming capabilities of databases (republication in PostgreSQL, Binlog in MySQL).
 * **Multi Writers:** Supports synchronizing data to multiple target databases in a single task, similar to a broadcast mode.
-* **Zero Dependencies:** AnyCDC does not rely on any external components, allowing for easy deployment.
 * **Upsert Support:** Converts Insert operations from the source database into Upsert semantics, enabling event replay.
 * **CDF (Custom Define Function):** Supports developing CDFs with JavaScript for advanced custom data transformation.
 * **Partial Sync:** Minimizes the impact on synchronization tasks when DDL operations are performed on the source database.
