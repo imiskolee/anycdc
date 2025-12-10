@@ -11,7 +11,7 @@ var typeMapping = map[types.Type][]string{
 		ColumnTypeDecimal, ColumnTypeFloat, ColumnTypeDouble, ColumnTypeReal, ColumnTypeNumeric,
 	},
 	types.TypeString: {ColumnTypeVarchar, ColumnTypeChar, ColumnTypeLineString, ColumnTypeMultiLineString,
-		ColumnTypeTinyText, ColumnTypeText, ColumnTypeMediumText, ColumnTypeLongText},
+		ColumnTypeTinyText, ColumnTypeText, ColumnTypeMediumText, ColumnTypeLongText, ColumnTypeTime},
 	types.TypeJSON:      {ColumnTypeJSON},
 	types.TypeTimestamp: {ColumnTypeDateTime, ColumnTypeTimestamp},
 	types.TypeDate:      {ColumnTypeDate},

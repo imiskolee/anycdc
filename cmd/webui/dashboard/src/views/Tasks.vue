@@ -28,6 +28,7 @@ function handleLogs(record) {
     openLogs.value = true
   }
 }
+
 function handleStart(record) {
   return function() {
     sdk.StartTask(record.record['id'])

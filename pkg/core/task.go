@@ -98,7 +98,7 @@ func (s *Task) Save() {
 func (s *Task) Event(e Event) error {
 	for _, w := range s.Writers {
 		if err := w.Execute(e); err != nil {
-			return s.logger.Errorf("can not execute writer %s,%s", w, err)
+			return s.logger.Errorf("can not execute writer %+v,%s,%s", e, w, err)
 		}
 	}
 	s.metric.LastSyncAt = time.Now()

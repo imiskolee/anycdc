@@ -272,7 +272,6 @@ func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 
 	if e.Type != 0 {
 		if err := s.opt.Subscriber.Event(e); err != nil {
-			log.Fatal("Subscriber consume failed:", err)
 			return err
 		}
 	}
@@ -310,7 +309,7 @@ func (s *Reader) convertToTypedData(oID uint32, data []byte) types.TypedData {
 	if !ok {
 		return types.NewTypedData(types.TypeString, string(data))
 	}
-	if oID == pgtype.UUIDOID {
+	if oID == pgtype.UUIDOID || oID == pgtype.TimeOID {
 		return types.NewTypedData(types.TypeString, string(data))
 	}
 	if oID == pgtype.JSONOID {

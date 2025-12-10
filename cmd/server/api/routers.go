@@ -5,6 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"net/http"
+	"path/filepath"
 )
 
 var server *gin.Engine
@@ -16,6 +18,16 @@ func init() {
 func Start() {
 	InitPlugins()
 	server.Static("/ui", "./static")
+	server.NoRoute(func(c *gin.Context) {
+		fmt.Println(c.Request.URL.String())
+		// 排除 API 请求（避免 API 路由被覆盖）
+		if c.Request.Method != "GET" {
+			c.Status(http.StatusMethodNotAllowed)
+			return
+		}
+		indexPath := filepath.Join("./static", "index.html")
+		c.File(indexPath)
+	})
 
 	resources := []string{
 		"tasks",

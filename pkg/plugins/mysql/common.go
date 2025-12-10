@@ -18,7 +18,7 @@ func Connect(connector *model.Connector) (*gorm.DB, error) {
 		connector.Database,
 	)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		core.SysLogger.Error("failed connect source database (%s), err=%s", connector, err)

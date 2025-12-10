@@ -7,7 +7,7 @@ import (
 
 var typeMapping = map[types.Type][]uint32{
 	types.TypeInt:       {pgtype.Int2OID, pgtype.Int4OID, pgtype.Int8OID},
-	types.TypeString:    {pgtype.UUIDOID, pgtype.VarcharOID, pgtype.BPCharOID, pgtype.QCharOID, pgtype.TextOID},
+	types.TypeString:    {pgtype.UUIDOID, pgtype.VarcharOID, pgtype.BPCharOID, pgtype.QCharOID, pgtype.TextOID, pgtype.TimeOID},
 	types.TypeBool:      {pgtype.BoolOID},
 	types.TypeJSON:      {pgtype.JSONOID},
 	types.TypeTimestamp: {pgtype.DateOID, pgtype.TimestampOID, pgtype.TimestamptzOID},
