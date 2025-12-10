@@ -4,7 +4,7 @@
   description="Manage your data source connection information(s)."
   :data="data"
   :custom-renders="customRenders"
-  detail-prefix="/common/connectors"
+  detail-prefix="/ui/common/connectors"
   object-name="connectors"
   ></table-page>
 </template>

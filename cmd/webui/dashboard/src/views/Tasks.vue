@@ -3,7 +3,7 @@
       title="Tasks"
       description="Manage your tasks information(s)."
       :custom-renders="customRenders"
-      detail-prefix="/common/tasks"
+      detail-prefix="/ui/common/tasks"
       object-name="tasks"
   ></table-page>
   <a-modal v-model:open="openLogs" style="width:80%">

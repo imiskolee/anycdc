@@ -28,10 +28,10 @@ func NewReader(ctx context.Context, opt interface{}) core.Reader {
 		ctx:    ctx,
 		cancel: cancel,
 		opt:    o,
-		schemaManager: NewSchema(ctx, &core.SchemaOption{
+		schemaManager: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
-		}),
+		})),
 	}
 }
 

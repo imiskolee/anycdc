@@ -20,10 +20,10 @@ func NewWriter(ctx context.Context, opt interface{}) core.Writer {
 	return &Writer{
 		ctx: ctx,
 		opt: o,
-		schemaManager: NewSchema(ctx, &core.SchemaOption{
+		schemaManager: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
-		}),
+		})),
 	}
 }
 
@@ -33,4 +33,8 @@ func (w *Writer) Prepare() error {
 
 func (w *Writer) Execute(e core.Event) error {
 	return w.execute(e)
+}
+
+func (w *Writer) ExecuteBatch(e []core.Event) error {
+	return w.executeBatch(e)
 }

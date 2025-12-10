@@ -22,6 +22,10 @@ func (w *Writer) Execute(e core.Event) error {
 	return w.execute(e)
 }
 
+func (w *Writer) ExecuteBatch(e []core.Event) error {
+	return w.executeBatch(e)
+}
+
 func NewWriter(context context.Context, opt interface{}) core.Writer {
 	o := opt.(*core.WriterOption)
 	return &Writer{

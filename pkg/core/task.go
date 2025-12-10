@@ -18,6 +18,7 @@ type Task struct {
 	ctx              context.Context
 	metric           model.Metric
 	lastMetricSyncAt time.Time
+	queue            []Event
 }
 
 func NewTask(id string) *Task {

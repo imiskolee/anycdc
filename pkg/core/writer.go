@@ -8,4 +8,5 @@ type WriterOption struct {
 type Writer interface {
 	Prepare() error
 	Execute(e Event) error
+	ExecuteBatch(e []Event) error
 }
