@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -14,8 +13,16 @@ type Metric struct {
 }
 
 const (
-	TaskStatusStopped = "Stopped"
-	TaskStatusRunning = "Running"
+	TaskStatusActive          = "Active"
+	TaskStatusInactive        = "Inactive"
+	TaskRunnerStatusPreparing = "Preparing"
+	TaskRunnerStatusFailed    = "Failed"
+	TaskRunnerStatusRunning   = "Running"
+	TaskRunnerStatusStopped   = "Stopped"
+
+	WriterPolicyRetry = "retry"
+	WriterPolicyStop  = "stop"
+	WriterPolicySkip  = "skip"
 )
 
 type Task struct {
@@ -25,17 +32,22 @@ type Task struct {
 	Tables                        string     `gorm:"column:tables;type:text" json:"tables"`
 	Writers                       string     `gorm:"column:writers;type:text" json:"writers"`
 	Extras                        string     `gorm:"column:extras;type:text" json:"extras"`
+	WriterPolicy                  string     `gorm:"column:writer_policy;type:varchar(255)" json:"writer_policy"`
+	RunnerStatus                  string     `gorm:"column:runner_status;type:varchar(255)" json:"runner_status"`
+	RunnerStatusFailedReason      string     `gorm:"column:runner_status_failed_reason;type:text" json:"runner_status_failed_reason"`
 	BatchSize                     int        `gorm:"column:batch_size;type:int" json:"batch_size"`
 	LastPosition                  string     `gorm:"column:last_position;type:varchar(255)" json:"last_position"`
 	LastStarted                   *time.Time `gorm:"column:last_started;type:timestamp" json:"last_started"`
 	LastSyncedAt                  *time.Time `gorm:"column:last_synced_at;type:timestamp" json:"last_synced_at"`
+	LastEventAt                   *time.Time `gorm:"column:last_event_at;type:timestamp" json:"last_event_at"`
 	MetricInsertCount             uint64     `gorm:"column:metric_insert_count;type:bigint;default:0" json:"metric_insert_count"`
 	MetricUpdateCount             uint64     `gorm:"column:metric_update_count;type:bigint;default:0" json:"metric_update_count"`
 	MetricDeleteCount             uint64     `gorm:"column:metric_delete_count;type:bigint;default:0" json:"metric_delete_count"`
 	MetricInsertCountSinceStarted uint64     `gorm:"column:metric_insert_count_since_started;type:bigint;default:0" json:"metric_insert_count_since_started"`
 	MetricUpdateCountSinceStarted uint64     `gorm:"column:metric_update_count_since_started;type:bigint;default:0" json:"metric_update_count_since_started"`
 	MetricDeleteCountSinceStarted uint64     `gorm:"column:metric_delete_count_since_started;type:bigint;default:0" json:"metric_delete_count_since_started"`
-	Status                        string     `gorm:"column:status;type:varchar(255)" json:"status"`
+
+	Status string `gorm:"column:status;type:varchar(255)" json:"status"`
 }
 
 func (s *Task) TableName() string {
@@ -66,8 +78,26 @@ func (s *Task) UpdateMetric(metric Metric) error {
 }
 
 func (s *Task) UpdateStatus(status string) error {
-	fmt.Println("Starting Update Status")
-	if err := DB().Table(s.TableName()).Where("id = ?", s.ID).Update("status", status).Error; err != nil {
+	updates := map[string]interface{}{
+		"status": status,
+	}
+	return s.PartialUpdates(updates)
+}
+
+func (s *Task) UpdateRunnerStatus(status string, failedReason ...string) error {
+	reason := ""
+	if len(failedReason) > 0 {
+		reason = failedReason[0]
+	}
+	return s.PartialUpdates(map[string]interface{}{
+		"runner_status":               status,
+		"runner_status_failed_reason": reason,
+	})
+
+}
+
+func (s *Task) PartialUpdates(val map[string]interface{}) error {
+	if err := DB().Table(s.TableName()).Where("id = ?", s.ID).Updates(val).Error; err != nil {
 		return err
 	}
 	return nil

@@ -53,6 +53,8 @@ func Start() {
 
 	}
 
+	server.PUT("/api/tasks/:id/active", ActiveTask)
+	server.PUT("/api/tasks/:id/inactive", InactiveTask)
 	server.PUT("/api/tasks/:id/start", StartTask)
 	server.PUT("/api/tasks/:id/stop", StopTask)
 	server.GET("/api/tasks/:id/logs", GetTaskLog)

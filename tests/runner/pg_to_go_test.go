@@ -43,7 +43,7 @@ func TestPGTOPG(t1 *testing.T) {
 		"publication_name": "test_pg_1",
 		"slot_name":        "test_pg_slot_1",
 	}
-	t.Status = model.TaskStatusRunning
+	t.Status = model.TaskStatusActive
 
 	j, _ := json.Marshal(extra)
 	t.Extras = string(j)

@@ -12,15 +12,49 @@ import (
 	"path"
 )
 
-func StartTask(ctx *gin.Context) {
+func ActiveTask(ctx *gin.Context) {
 	id := ctx.Param("id")
 	var task model.Task
 	if err := model.DB().Where("id = ?", id).Last(&task).Error; err != nil {
 		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("can not get task:%s", id).Error())
 		return
 	}
-	if err := task.UpdateStatus(model.TaskStatusRunning); err != nil {
+	if err := task.UpdateStatus(model.TaskStatusActive); err != nil {
 		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())
+		return
+	}
+
+	if err := runtime.R.StartTask(id); err != nil {
+		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())
+		return
+	}
+	Success(ctx, "success", true)
+}
+
+func InactiveTask(ctx *gin.Context) {
+	id := ctx.Param("id")
+	var task model.Task
+	if err := model.DB().Where("id = ?", id).Last(&task).Error; err != nil {
+		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("can not get task:%s", id).Error())
+		return
+	}
+	if err := task.UpdateStatus(model.TaskStatusInactive); err != nil {
+		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())
+		return
+	}
+
+	if err := runtime.R.StopTask(id); err != nil {
+		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())
+		return
+	}
+	Success(ctx, "success", true)
+}
+
+func StartTask(ctx *gin.Context) {
+	id := ctx.Param("id")
+	var task model.Task
+	if err := model.DB().Where("id = ?", id).Last(&task).Error; err != nil {
+		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("can not get task:%s", id).Error())
 		return
 	}
 
@@ -37,10 +71,6 @@ func StopTask(ctx *gin.Context) {
 	var task model.Task
 	if err := model.DB().Where("id = ?", id).Last(&task).Error; err != nil {
 		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("can not get task:%s", id).Error())
-		return
-	}
-	if err := task.UpdateStatus(model.TaskStatusStopped); err != nil {
-		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())
 		return
 	}
 

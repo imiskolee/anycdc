@@ -23,11 +23,13 @@
       <div>©{{ new Date().getFullYear() }} 后台管理系统 - 版权所有</div>
     </a-layout-footer>
   </a-layout>
+  <Loading />
 </template>
 
 <script setup>
 import Menu from "./Menu.vue"
 import { ref } from 'vue';
+import Loading from "./components/Loading.vue";
 
 // 侧边栏折叠状态
 const collapsed = ref(true);

@@ -136,9 +136,11 @@ func (s *Reader) preparePublication() error {
 
 func (s *Reader) start() error {
 	s.opt.Logger.Info("starting reader %s from %s", s.opt.Connector, s.lastSyncPosition)
+	s.running = true
 	var successful bool
 	defer (func() {
 		s.done <- successful
+		s.running = false
 	})()
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", s.opt.Extra[ExtraPublicationName]),
@@ -260,7 +262,6 @@ func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 		break
 	case *pglogrepl.DeleteMessageV2:
 		rel := s.relations[logicalMsg.RelationID]
-
 		oldData := s.convertDataMap(logicalMsg.RelationID, logicalMsg.OldTuple.Columns)
 		var pks []core.Field
 		for _, k := range s.getPrimaryKeys(&rel) {
@@ -288,6 +289,7 @@ func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 			return err
 		}
 	}
+	s.lastEventAt = xld.ServerTime
 	s.lastSyncPosition = xld.ServerWALEnd
 	return nil
 }

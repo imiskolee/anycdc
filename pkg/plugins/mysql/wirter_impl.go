@@ -3,6 +3,7 @@ package mysql
 import (
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/model"
+	"github.com/imiskolee/anycdc/pkg/plugins/common_sql"
 )
 
 func (w *Writer) prepare() error {
@@ -16,6 +17,7 @@ func (w *Writer) prepare() error {
 		w.opt.Logger.Error("can not prepare connector:%s,%s", w.opt.Connector, err)
 		return err
 	}
+	db.Logger = common_sql.NewLogger(w.opt.Logger)
 	w.connector = connector
 	w.conn = db
 	return nil

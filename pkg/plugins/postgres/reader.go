@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pglogrepl"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type Reader struct {
@@ -17,8 +18,14 @@ type Reader struct {
 	lastSyncPosition pglogrepl.LSN
 	relations        map[uint32]pglogrepl.RelationMessageV2
 	typeMap          *pgtype.Map
+	running          bool
 	done             chan bool
 	schema           core.SchemaManager
+	lastEventAt      time.Time
+}
+
+func (s *Reader) LastEventAt() time.Time {
+	return s.lastEventAt
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
@@ -30,6 +37,7 @@ func NewReader(ctx context.Context, opt interface{}) core.Reader {
 		opt:       o,
 		relations: make(map[uint32]pglogrepl.RelationMessageV2),
 		typeMap:   pgtype.NewMap(),
+		done:      make(chan bool),
 		schema: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 		})),
@@ -45,6 +53,9 @@ func (s *Reader) Start() error {
 }
 
 func (s *Reader) Stop() error {
+	if !s.running {
+		return nil
+	}
 	s.cancel()
 	res := <-s.done
 	if res {

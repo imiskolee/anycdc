@@ -1,6 +1,9 @@
 package core
 
-import "github.com/imiskolee/anycdc/pkg/model"
+import (
+	"github.com/imiskolee/anycdc/pkg/model"
+	"time"
+)
 
 type ReaderSubscriber interface {
 	Event(e Event) error
@@ -20,4 +23,5 @@ type Reader interface {
 	Start() error
 	Stop() error
 	Position() string
+	LastEventAt() time.Time
 }

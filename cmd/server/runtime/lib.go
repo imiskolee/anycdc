@@ -16,7 +16,7 @@ type Runtime struct {
 
 func (s *Runtime) Prepare() error {
 	var tasks []model.Task
-	if err := model.DB().Where("status = ?", model.TaskStatusRunning).Find(&tasks).Error; err != nil {
+	if err := model.DB().Where("status = ?", model.TaskStatusActive).Find(&tasks).Error; err != nil {
 		return err
 	}
 	s.Tasks = make(map[string]*core.Task)

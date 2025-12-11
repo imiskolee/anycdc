@@ -28,7 +28,9 @@ func (s *Reader) prepare() error {
 func (s *Reader) start() {
 	s.opt.Logger.Info("starting reader %s on %s", s.opt.Connector, s.opt.InitialPosition)
 	successful := false
+	s.running = true
 	defer (func() {
+		s.running = false
 		s.done <- successful
 	})()
 	if s.connector == nil {
@@ -98,6 +100,9 @@ func (s *Reader) start() {
 }
 
 func (s *Reader) stop() error {
+	if !s.running {
+		return nil
+	}
 	s.cancel()
 	res := <-s.done
 	if res {
@@ -108,6 +113,7 @@ func (s *Reader) stop() error {
 }
 
 func (s *Reader) handler(e *replication.BinlogEvent) error {
+	s.lastEventAt = time.Unix(int64(e.Header.Timestamp), 0)
 	switch e.Header.EventType {
 	case replication.WRITE_ROWS_EVENTv2, replication.UPDATE_ROWS_EVENTv2:
 		rowsEvent, ok := e.Event.(*replication.RowsEvent)

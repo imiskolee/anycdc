@@ -7,6 +7,7 @@ import (
 	"github.com/go-mysql-org/go-mysql/replication"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/model"
+	"time"
 )
 
 type Reader struct {
@@ -18,7 +19,13 @@ type Reader struct {
 	cancel        context.CancelFunc
 	connector     *model.Connector
 	schemaManager core.SchemaManager
+	lastEventAt   time.Time
+	running       bool
 	done          chan bool
+}
+
+func (r *Reader) LastEventAt() time.Time {
+	return r.lastEventAt
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
@@ -28,6 +35,7 @@ func NewReader(ctx context.Context, opt interface{}) core.Reader {
 		ctx:    ctx,
 		cancel: cancel,
 		opt:    o,
+		done:   make(chan bool),
 		schemaManager: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,

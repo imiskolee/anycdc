@@ -119,12 +119,21 @@ async function initData() {
     }
     columns.value = cols
     data.value = resp
-    console.log(columns,data)
 }
 }
 
 onMounted(()=>{
   initData()
+})
+
+
+
+function refresh() {
+  initData()
+}
+
+defineExpose({
+  refresh
 })
 
 

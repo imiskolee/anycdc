@@ -29,12 +29,12 @@ func NewTask(id string) *Task {
 	}
 }
 
-func (s *Task) Prepare() error {
-	s.logger.Info("starting prepare task")
+func (s *Task) prepare() error {
 	t, err := model.GetTaskByID(s.id)
 	if err != nil {
 		return s.logger.Errorf("can not get task by id %s,%s", s.id, err)
 	}
+	_ = t.UpdateRunnerStatus(model.TaskRunnerStatusPreparing)
 	s.task = t
 	readerConnector, err := model.GetConnectorByID(t.Reader)
 	if err != nil {
@@ -77,14 +77,27 @@ func (s *Task) Prepare() error {
 		}
 		s.Writers = append(s.Writers, w)
 	}
+
+	return nil
+}
+
+func (s *Task) Prepare() error {
+	s.logger.Info("starting prepare task")
+	err := s.prepare()
+	if err != nil {
+		_ = s.task.UpdateRunnerStatus(model.TaskRunnerStatusFailed, "prepare task failed:"+err.Error())
+		return err
+	}
 	s.logger.Info("task prepare successful")
 	return nil
 }
 
 func (s *Task) Start() error {
 	s.logger.Info("starting start task")
+	_ = s.task.UpdateRunnerStatus(model.TaskRunnerStatusRunning)
 	err := s.Reader.Start()
 	if err != nil {
+		_ = s.task.UpdateRunnerStatus(model.TaskRunnerStatusFailed, "start task failed:"+err.Error())
 		return s.logger.Errorf("can not start reader %s,%s", s.id, err)
 	} else {
 		s.logger.Info("task start successful")
@@ -94,12 +107,19 @@ func (s *Task) Start() error {
 
 func (s *Task) Stop() error {
 	s.logger.Info("starting stop task.")
-	return s.Reader.Stop()
+	err := s.Reader.Stop()
+	if err == nil {
+		_ = s.task.UpdateRunnerStatus(model.TaskRunnerStatusStopped)
+	}
+	return err
 }
 
 func (s *Task) Save() {
-	s.metric.LastSyncAt = time.Now()
 	s.metric.LastSyncPosition = s.Reader.Position()
+	lastSync := s.Reader.LastEventAt()
+	if !lastSync.IsZero() {
+		s.metric.LastSyncAt = lastSync
+	}
 	s.logger.Info("successful save %s on %s", s.metric.LastSyncPosition, s.metric.LastSyncAt)
 	s.save()
 }
@@ -110,7 +130,6 @@ func (s *Task) Event(e Event) error {
 			return s.logger.Errorf("can not execute writer %+v,%s,%s", e, w, err)
 		}
 	}
-	s.metric.LastSyncAt = time.Now()
 	s.metric.LastSyncPosition = s.Reader.Position()
 	s.updateMetric(e.Type)
 	return nil

@@ -113,6 +113,11 @@
             readonly: true
         },
         {
+          name : "last_synced_at",
+          "type" : "string",
+          readonly: true,
+        },
+        {
             name : "status",
             "type" : "string",
             readonly: true,

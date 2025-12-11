@@ -1,6 +1,6 @@
 
 import {notification } from 'ant-design-vue';
-
+import loading from "./loading.js"
 export class APISDK {
     /**
      * 初始化 SDK
@@ -34,7 +34,9 @@ export class APISDK {
         const url = `${this.domain}${path}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
+        if(method !== "GET") {
+            loading.show()
+        }
         try {
             // 构建请求配置
             const requestConfig = {
@@ -67,10 +69,11 @@ export class APISDK {
                     }
                 )
             }
-
+            loading.hide()
             // 返回成功数据
             return responseData.data || {};
         } catch (error) {
+            loading.hide()
             clearTimeout(timeoutId);
             notification.error(
                 {
@@ -172,6 +175,12 @@ export class APISDK {
     }
     async GetTaskLog(id) {
         return this._request(`/tasks/${id}/logs`, 'GET');
+    }
+    async ActiveTask(id )   {
+        return this._request(`/tasks/${id}/active`, 'PUT');
+    }
+    async InactiveTask(id) {
+        return this._request(`/tasks/${id}/inactive`, 'PUT');
     }
 }
 
