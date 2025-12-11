@@ -56,7 +56,7 @@ func (w *Writer) executeBatch(e []core.Event) error {
 
 func (w *Writer) eventToSQL(e *core.Event) (string, []interface{}) {
 	schema := w.schemaManager.Get(w.connector.Database, e.Table)
-	w.opt.Logger.Debug("start convert event %+v,schema=%+v", schema)
+	w.opt.Logger.Debug("start convert event %+v,schema=%+v", e, schema)
 	if len(schema.Fields) < 1 {
 		w.opt.Logger.Info("Skipped event, table %s do not exists on the connector", e.FullTableName())
 		return "", nil
