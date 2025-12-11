@@ -218,10 +218,11 @@ func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 		s.relations[logicalMsg.RelationID] = *logicalMsg
 		break
 	case *pglogrepl.InsertMessageV2:
+
 		rel := s.relations[logicalMsg.RelationID]
 		data := s.convertDataMap(logicalMsg.RelationID, logicalMsg.Tuple.Columns)
 		var pks []core.Field
-		for _, k := range getPrimaryKey(rel) {
+		for _, k := range s.getPrimaryKeys(&rel) {
 			pks = append(pks, core.Field{
 				Name:  k,
 				Value: data[k],
@@ -243,7 +244,7 @@ func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 			oldData = s.convertDataMap(logicalMsg.RelationID, logicalMsg.OldTuple.Columns)
 		}
 		var pks []core.Field
-		for _, k := range getPrimaryKey(rel) {
+		for _, k := range s.getPrimaryKeys(&rel) {
 			pks = append(pks, core.Field{
 				Name:  k,
 				Value: oldData[k],
@@ -262,7 +263,7 @@ func (s *Reader) handleXLogData(msg *pgproto3.CopyData) error {
 
 		oldData := s.convertDataMap(logicalMsg.RelationID, logicalMsg.OldTuple.Columns)
 		var pks []core.Field
-		for _, k := range getPrimaryKey(rel) {
+		for _, k := range s.getPrimaryKeys(&rel) {
 			pks = append(pks, core.Field{
 				Name:  k,
 				Value: oldData[k],
@@ -429,14 +430,17 @@ func alterPublicationTables(ctx context.Context, pool *pgx.Conn, pubName string,
 	return tx.Commit(ctx)
 }
 
-func getPrimaryKey(rel pglogrepl.RelationMessageV2) []string {
-	var keys []string
-	for _, col := range rel.Columns {
-		if col.Flags&0x01 != 0 {
-			keys = append(keys, col.Name)
+func (s *Reader) getPrimaryKeys(table *pglogrepl.RelationMessageV2) []string {
+	sch := s.schema.Get("", table.RelationName)
+	var pks []string
+	if s != nil {
+		for _, f := range sch.Fields {
+			if f.IsPrimaryKey {
+				pks = append(pks, f.Name)
+			}
 		}
 	}
-	return keys
+	return pks
 }
 
 func quoteIdentifier(ident string) string {

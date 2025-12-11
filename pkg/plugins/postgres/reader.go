@@ -18,6 +18,7 @@ type Reader struct {
 	relations        map[uint32]pglogrepl.RelationMessageV2
 	typeMap          *pgtype.Map
 	done             chan bool
+	schema           core.SchemaManager
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
@@ -29,6 +30,9 @@ func NewReader(ctx context.Context, opt interface{}) core.Reader {
 		opt:       o,
 		relations: make(map[uint32]pglogrepl.RelationMessageV2),
 		typeMap:   pgtype.NewMap(),
+		schema: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
+			Connector: o.Connector,
+		})),
 	}
 }
 
