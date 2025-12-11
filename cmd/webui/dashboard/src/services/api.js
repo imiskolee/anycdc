@@ -182,6 +182,9 @@ export class APISDK {
     async InactiveTask(id) {
         return this._request(`/tasks/${id}/inactive`, 'PUT');
     }
+    async TestConnector(data )   {
+        return this._request(`/utils/test_connector`, 'POST',data);
+    }
 }
 
 // 导出 SDK（支持 Node.js/浏览器）

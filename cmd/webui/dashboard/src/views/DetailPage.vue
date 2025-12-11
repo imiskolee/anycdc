@@ -21,11 +21,23 @@
                   v-model:value.lazy="obj[item.name]">
           <a-select-option :value="option.value" v-for="option in item.options">{{option.name}}</a-select-option>
         </a-select>
-
       </a-form-item>
-      <div style="align-content: center;text-align: center">
-        <a-button :onclick="handleSubmit">Submit</a-button>
+      <div>
+        <div>
+
+          <div style="align-content: center;text-align: center">
+            <a-tooltip trigger="hover" title="test data source connectivity">
+              <a-button :onclick="handleTest" v-if="objectName === 'connectors'" danger>Test</a-button>
+            </a-tooltip>
+            <div style="width:20px;display: inline-block"></div>
+            <a-tooltip trigger="hover" title="should restart all related task after changed">
+            <a-button :onclick="handleSubmit" type="primary">Submit</a-button>
+            </a-tooltip>
+          </div>
+        </div>
+
       </div>
+
     </a-form>
   </div>
 </div>
@@ -133,6 +145,11 @@ function toData(record) {
   return newData
 }
 
+
+async function handleTest() {
+  const data = toData(obj)
+  await apiSDK.TestConnector(data)
+}
 
 
 

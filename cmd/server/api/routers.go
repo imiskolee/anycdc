@@ -58,6 +58,7 @@ func Start() {
 	server.PUT("/api/tasks/:id/start", StartTask)
 	server.PUT("/api/tasks/:id/stop", StopTask)
 	server.GET("/api/tasks/:id/logs", GetTaskLog)
+	server.POST("/api/utils/test_connector", TestConnector)
 
 	core.SysLogger.Info("Starting API Server:%s", config.G.Admin.Listen)
 	if err := server.Run(config.G.Admin.Listen); err != nil {

@@ -10,4 +10,5 @@ func init() {
 	core.Registries.Reader.Register(PluginMySQL, NewReader)
 	core.Registries.Writer.Register(PluginMySQL, NewWriter)
 	core.Registries.Schema.Register(PluginMySQL, NewSchema)
+	core.Registries.Connector.Register(PluginMySQL, NewConnector)
 }

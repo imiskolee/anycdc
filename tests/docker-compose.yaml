@@ -79,7 +79,14 @@ services:
       --binlog-row-image=FULL
       --gtid_mode=ON
     restart: unless-stopped
-
+  starrocks_1:
+    image: starrocks/allin1-ubuntu:latest
+    container_name: sr-db-1
+    environment:
+      MYSQL_ROOT_PASSWORD: anycdc
+      MYSQL_DATABASE: anycdc_test
+    ports:
+      - "29030:9030"
 volumes:
   postgres-data:
   mysql-data:
