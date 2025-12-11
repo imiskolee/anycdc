@@ -26,9 +26,10 @@ func (w *Writer) execute(e core.Event) error {
 	if sql == "" {
 		return nil
 	}
+
 	err := w.conn.Exec(sql, params...).Error
 	if err != nil {
-		w.opt.Logger.Error("can not execute event:%s,%+v,%s", sql, params, err)
+		w.opt.Logger.Error("can not execute event:%s,%s %+v,schema:%+v", err, sql, params)
 	}
 	return err
 }
@@ -55,6 +56,7 @@ func (w *Writer) executeBatch(e []core.Event) error {
 
 func (w *Writer) eventToSQL(e *core.Event) (string, []interface{}) {
 	schema := w.schemaManager.Get(w.connector.Database, e.Table)
+	w.opt.Logger.Debug("start convert event %+v,schema=%+v", schema)
 	if len(schema.Fields) < 1 {
 		w.opt.Logger.Info("Skipped event, table %s do not exists on the connector", e.FullTableName())
 		return "", nil

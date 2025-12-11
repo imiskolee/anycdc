@@ -17,6 +17,7 @@ type Reader struct {
 	lastSyncPosition pglogrepl.LSN
 	relations        map[uint32]pglogrepl.RelationMessageV2
 	typeMap          *pgtype.Map
+	done             chan bool
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
@@ -40,7 +41,12 @@ func (s *Reader) Start() error {
 }
 
 func (s *Reader) Stop() error {
-	return nil
+	s.cancel()
+	res := <-s.done
+	if res {
+		return nil
+	}
+	return s.opt.Logger.Errorf("failed stop reader")
 }
 
 func (s *Reader) Position() string {

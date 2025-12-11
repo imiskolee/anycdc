@@ -30,6 +30,7 @@ func NewTask(id string) *Task {
 }
 
 func (s *Task) Prepare() error {
+	s.logger.Info("starting prepare task")
 	t, err := model.GetTaskByID(s.id)
 	if err != nil {
 		return s.logger.Errorf("can not get task by id %s,%s", s.id, err)
@@ -76,22 +77,30 @@ func (s *Task) Prepare() error {
 		}
 		s.Writers = append(s.Writers, w)
 	}
+	s.logger.Info("task prepare successful")
 	return nil
 }
 
 func (s *Task) Start() error {
+	s.logger.Info("starting start task")
 	err := s.Reader.Start()
+	if err != nil {
+		return s.logger.Errorf("can not start reader %s,%s", s.id, err)
+	} else {
+		s.logger.Info("task start successful")
+	}
 	return err
 }
 
 func (s *Task) Stop() error {
+	s.logger.Info("starting stop task.")
 	return s.Reader.Stop()
 }
 
 func (s *Task) Save() {
 	s.metric.LastSyncAt = time.Now()
 	s.metric.LastSyncPosition = s.Reader.Position()
-	s.logger.Info("save task state %s on %s", s.metric.LastSyncPosition, s.metric.LastSyncAt)
+	s.logger.Info("successful save %s on %s", s.metric.LastSyncPosition, s.metric.LastSyncAt)
 	s.save()
 }
 

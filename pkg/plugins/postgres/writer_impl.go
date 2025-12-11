@@ -33,6 +33,7 @@ func (w *Writer) execute(e core.Event) error {
 		w.opt.Logger.Info("Skipped event, table %s do not exists on the connector", e.FullTableName())
 		return nil
 	}
+	w.opt.Logger.Debug("start convert event %+v,schema=%+v", schema)
 	newEvent := e
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
 	sql, params := eventToSQL(&newEvent)

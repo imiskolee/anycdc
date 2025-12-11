@@ -24,6 +24,11 @@ const (
 )
 
 func (s *Reader) prepare() error {
+	if s.conn != nil {
+		if err := s.conn.Close(context.Background()); err != nil {
+			return s.opt.Logger.Errorf("can not stop exists conenction:%s", err.Error())
+		}
+	}
 	connector, err := model.GetConnectorByID(s.opt.Connector)
 	if err != nil {
 		s.opt.Logger.Error("can not get connector:%s,%s", connector, err)
@@ -131,6 +136,10 @@ func (s *Reader) preparePublication() error {
 
 func (s *Reader) start() error {
 	s.opt.Logger.Info("starting reader %s from %s", s.opt.Connector, s.lastSyncPosition)
+	var successful bool
+	defer (func() {
+		s.done <- successful
+	})()
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", s.opt.Extra[ExtraPublicationName]),
 		"proto_version '1'",
@@ -153,7 +162,7 @@ func (s *Reader) start() error {
 	for {
 		select {
 		case <-s.ctx.Done():
-			return nil
+			goto end
 		default:
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -163,16 +172,19 @@ func (s *Reader) start() error {
 			if pgconn.Timeout(err) {
 				continue // 超时重试
 			}
-			return fmt.Errorf("接收消息失败: %w", err)
+			s.opt.Logger.Error("failed receive message %s", err.Error())
 		}
 		if err := s.handler(msg); err != nil {
+			s.opt.Logger.Error("failed handler message %+v, %s", msg, err.Error())
 			continue
 		}
-
 		_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
 			s.conn.PgConn(),
 			pglogrepl.StandbyStatusUpdate{WALWritePosition: s.lastSyncPosition})
 	}
+end:
+	successful = true
+	return nil
 }
 
 func (s *Reader) handler(msg pgproto3.BackendMessage) error {
