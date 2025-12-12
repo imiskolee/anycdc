@@ -129,9 +129,9 @@ func (s *Reader) handler(e *replication.BinlogEvent) error {
 		}
 		dbName := string(rowsEvent.Table.Schema)
 		tableName := string(rowsEvent.Table.Table)
-		s.opt.Logger.Debug("event_type=%d db=%s table=%s, timestamp=%d", e.Header.EventType, dbName, tableName, e.Header.Timestamp)
+		//	s.opt.Logger.Debug("event_type=%d db=%s table=%s, timestamp=%d", e.Header.EventType, dbName, tableName, e.Header.Timestamp)
 		if dbName != s.connector.Database {
-			s.opt.Logger.Debug("skipped event,because of db %s can not match %s", dbName, s.connector.Database)
+			//		s.opt.Logger.Debug("skipped event,because of db %s can not match %s", dbName, s.connector.Database)
 			return nil
 		}
 		filtered := false
@@ -142,7 +142,7 @@ func (s *Reader) handler(e *replication.BinlogEvent) error {
 			}
 		}
 		if !filtered {
-			s.opt.Logger.Debug("table %s not configured", tableName)
+			//	s.opt.Logger.Debug("table %s not configured", tableName)
 			return nil
 		}
 
