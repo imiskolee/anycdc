@@ -80,6 +80,7 @@ func (s *Reader) start() {
 		ctx, cancel := context.WithTimeout(s.ctx, 10*time.Second)
 		event, err := streamer.GetEvent(ctx)
 		if errors.Is(err, context.DeadlineExceeded) {
+			s.opt.Logger.Debug("get event timeout, %s", s.opt.Connector)
 			continue
 		}
 		cancel()
