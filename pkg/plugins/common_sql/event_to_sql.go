@@ -112,7 +112,7 @@ func updateToSQL(typ string, e *core.Event) (string, []interface{}) {
 			}
 		}
 		if isPK {
-			whereClauses = append(whereClauses, quoted(typ, col))
+			whereClauses = append(whereClauses, fmt.Sprintf("%s = ?", quoted(typ, col)))
 			whereValues = append(whereValues, val)
 		} else {
 			setClauses = append(setClauses, fmt.Sprintf("%s = ?", quoted(typ, col)))
