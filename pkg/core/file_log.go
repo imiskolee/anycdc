@@ -53,7 +53,7 @@ func NewFileLog(p string) *FileLogger {
 		EncodeTime:   zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05"), // 自定义时间格式
 		EncodeCaller: zapcore.ShortCallerEncoder,
 	}
-	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), writer, zapcore.DebugLevel)
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoderConfig), writer, zapcore.InfoLevel)
 	logger := zap.New(
 		core,
 		zap.AddCaller(),
