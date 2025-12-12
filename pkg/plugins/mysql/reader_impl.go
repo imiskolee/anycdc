@@ -117,7 +117,13 @@ func (s *Reader) handler(e *replication.BinlogEvent) error {
 	s.opt.Logger.Debug("event_type=%d timestamp=%d", e.Header.EventType, e.Header.Timestamp)
 	s.lastEventAt = time.Unix(int64(e.Header.Timestamp), 0)
 	switch e.Header.EventType {
-	case replication.WRITE_ROWS_EVENTv2, replication.UPDATE_ROWS_EVENTv2:
+	case
+		replication.WRITE_ROWS_EVENTv0,
+		replication.WRITE_ROWS_EVENTv1,
+		replication.WRITE_ROWS_EVENTv2,
+		replication.UPDATE_ROWS_EVENTv0,
+		replication.UPDATE_ROWS_EVENTv1,
+		replication.UPDATE_ROWS_EVENTv2:
 		rowsEvent, ok := e.Event.(*replication.RowsEvent)
 		if !ok {
 			return s.opt.Logger.Errorf("can not convert %v to RowsEvent", e.Event)
