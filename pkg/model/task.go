@@ -5,6 +5,7 @@ import (
 )
 
 type Metric struct {
+	RawEvents        uint64
 	Inserted         uint64
 	Updated          uint64
 	Deleted          uint64

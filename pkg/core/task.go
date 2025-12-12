@@ -10,13 +10,14 @@ import (
 )
 
 type Task struct {
-	id               string
-	task             *model.Task
-	Reader           Reader
-	Writers          []Writer
-	logger           *FileLogger
-	ctx              context.Context
-	metric           model.Metric
+	id      string
+	task    *model.Task
+	Reader  Reader
+	Writers []Writer
+	logger  *FileLogger
+	ctx     context.Context
+	metric  model.Metric
+
 	lastMetricSyncAt time.Time
 	queue            []Event
 }
@@ -120,7 +121,6 @@ func (s *Task) Save() {
 	if !lastSync.IsZero() {
 		s.metric.LastSyncAt = lastSync
 	}
-	s.logger.Info("successful save %s on %s", s.metric.LastSyncPosition, s.metric.LastSyncAt)
 	s.save()
 }
 
@@ -156,6 +156,14 @@ func (s *Task) updateMetric(typ EventType) {
 }
 
 func (s *Task) save() error {
+	s.logger.Info("successful save %s on %s E=%d,I=%d,U=%d,D=%d",
+		s.metric.LastSyncPosition, s.metric.LastSyncAt,
+		s.metric.RawEvents,
+		s.metric.Inserted,
+		s.metric.Updated,
+		s.metric.Deleted,
+	)
+
 	s.lastMetricSyncAt = time.Now()
 	metric := s.metric
 	err := s.task.UpdateMetric(metric)
@@ -166,5 +174,6 @@ func (s *Task) save() error {
 	s.metric.Inserted = 0
 	s.metric.Updated = 0
 	s.metric.Deleted = 0
+	s.metric.RawEvents = 0
 	return nil
 }
