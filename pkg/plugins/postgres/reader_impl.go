@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/core/types"
@@ -162,6 +163,9 @@ func (s *Reader) start() error {
 	}
 
 	for {
+		if s.retries > 10 {
+			return errors.New("reader stopped,because of too many fails")
+		}
 		select {
 		case <-s.ctx.Done():
 			goto end
@@ -175,9 +179,13 @@ func (s *Reader) start() error {
 				continue // 超时重试
 			}
 			s.opt.Logger.Error("failed receive message %s", err.Error())
+			s.retries++
+			time.Sleep(time.Duration(s.retries) * time.Second)
 		}
 		if err := s.handler(msg); err != nil {
 			s.opt.Logger.Error("failed handler message %+v, %s", msg, err.Error())
+			s.retries++
+			time.Sleep(time.Duration(s.retries) * time.Second)
 			continue
 		}
 		_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),

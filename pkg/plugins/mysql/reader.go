@@ -22,6 +22,7 @@ type Reader struct {
 	lastEventAt   time.Time
 	running       bool
 	done          chan bool
+	retries       int
 }
 
 func (r *Reader) LastEventAt() time.Time {

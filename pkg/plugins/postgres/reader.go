@@ -22,6 +22,7 @@ type Reader struct {
 	done             chan bool
 	schema           core.SchemaManager
 	lastEventAt      time.Time
+	retries          int
 }
 
 func (s *Reader) LastEventAt() time.Time {

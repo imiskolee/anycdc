@@ -65,7 +65,7 @@ func (w *Writer) eventToSQL(e *core.Event) (string, []interface{}) {
 	}
 	newEvent := e
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
-	sql, params := eventToSQL(newEvent)
+	sql, params := common_sql.EventToSQL(w.connector.Type, newEvent)
 	return sql, params
 
 }

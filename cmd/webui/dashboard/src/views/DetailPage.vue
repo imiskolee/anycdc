@@ -144,8 +144,6 @@ function toData(record) {
   })
   return newData
 }
-
-
 async function handleTest() {
   const data = toData(obj)
   await apiSDK.TestConnector(data)

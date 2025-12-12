@@ -71,6 +71,9 @@ func (s *Reader) start() {
 		return
 	}
 	for {
+		if s.retries > 10 {
+			s.opt.Logger.Error("reader stopped", s.opt.Connector)
+		}
 		select {
 		case <-s.ctx.Done():
 			s.opt.Logger.Info("successfully stopped reader %s", s.opt.Connector)
@@ -85,12 +88,15 @@ func (s *Reader) start() {
 		}
 		cancel()
 		if err != nil {
+			s.retries++
 			s.opt.Logger.Error("failed to reader event,%s", err.Error())
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(s.retries) * time.Second)
 			continue
 		}
 		if err := s.handler(event); err != nil {
+			s.retries++
 			s.opt.Logger.Error("failed to handle event,%s", err.Error())
+			time.Sleep(time.Duration(s.retries) * time.Second)
 			break
 		}
 		if event.Header.EventType == replication.XID_EVENT {

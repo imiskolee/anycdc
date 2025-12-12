@@ -15,7 +15,9 @@
 <script setup lang="jsx">
 import TablePage from "../components/TablePage.vue";
 import LogGroup from "../components/LogGroup.vue";
-import { ref } from 'vue';
+import ActionMenu from "../components/ActionMenu.vue";
+
+import {h, ref} from 'vue';
 
 import {APISDK} from "../services/api.js";
 const sdk = new APISDK({})
@@ -71,18 +73,56 @@ function handleLogs(record) {
     }
   }
 
-  const customRenders = {
+
+/**
+ *
+ * @type {{current_pos: (function(*): *), __action__: (function(*): *), info: (function(*): *), status: (function(*): *)}}
+
+ <div class="action-groups" style="width:200px">
+ <a onClick={handleLogs(record)}>Logs</a>
+ {record.record.status !== 'Active' && <a onClick={handleActive(record)}>Active</a>}
+ {record.record.status === 'Active' && record.record.runner_status !== 'Running' && <a onClick={handleInactive(record)}>Inactive</a>}
+ {record.record.runner_status === 'Running' && <a onClick={handleStop(record)}>Stop</a>}
+ {record.record.runner_status !== 'Running' && <a onClick={handleStart(record)}>Start</a>}
+ {record.record.status !== 'Active' && <a onClick={handleDelete(record)}>Delete</a>}
+ </div>
+
+ */
+
+
+
+const customRenders = {
     "__action__": (record) => {
-      return (
-          <div class="action-groups" style="width:200px">
-            <a onClick={handleLogs(record)}>Logs</a>
-            {record.record.status !== 'Active' && <a onClick={handleActive(record)}>Active</a>}
-            {record.record.status === 'Active' && record.record.runner_status !== 'Running' && <a onClick={handleInactive(record)}>Inactive</a>}
-            {record.record.runner_status === 'Running' && <a onClick={handleStop(record)}>Stop</a>}
-            {record.record.runner_status !== 'Running' && <a onClick={handleStart(record)}>Start</a>}
-            {record.record.status !== 'Active' && <a onClick={handleDelete(record)}>Delete</a>}
-          </div>
-      )
+
+      const actionMenus = [
+        {
+          name : "Active",
+        },
+        {
+          name : "Inactive"
+        },
+        {
+          name : "Start",
+        },
+        {
+          name : "Stop",
+        },
+        {
+          name : "Logs",
+        },
+        {
+          name : "Rotate To Latest",
+        },
+        {
+          name : "Open Debug"
+        },
+        {
+          name : "Close Debug"
+        },
+        {
+          name : "Delete",
+        }
+      ]
     },
     'info': (record) => {
       return (<div>I <a>{record.record['metric_insert_count_since_started'] || 0}</a> /

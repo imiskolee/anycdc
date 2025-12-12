@@ -3,15 +3,27 @@
     <h1>{{title}} <span class="description">{{description}}</span></h1>
     <div v-if="detailPrefix"><a :href="detailURL"><a-button>+</a-button></a></div>
   </a-flex>
-  <a-table  :data-source="data" :columns="columns"></a-table>
+  <a-table  :data-source="data" :columns="columns">
+    <template #action="{record}">
+      <action-menu  :items="actionMenus"></action-menu>
+    </template>
+
+  </a-table>
 </template>
 <script setup lang="jsx">
 import router from "../routers/index.js";
 import {APISDK} from "../services/api.js";
 import {onMounted, ref} from "vue";
 import forms from "../services/forms.js"
+import ActionMenu from "./ActionMenu.vue";
 
 const apiSDK = new APISDK({})
+
+const actionMenus = [
+  {
+    name : 'Delete',
+  }
+]
 
 const props = defineProps({
   title : String,
@@ -109,14 +121,15 @@ async function initData() {
     }
 
     if(props.customRenders && props.customRenders["__action__"]) {
-      const item = {
-        title: "Actions",
-        key: "__Actions__",
-        width: 100,
-        customRender:props.customRenders["__action__"]
-      }
-      cols.push(item)
+
     }
+    const item = {
+      title: "action",
+      // key: "__Actions__",
+      width: 100,
+      //   customRender:props.customRenders["__action__"]
+    }
+    cols.push(item)
     columns.value = cols
     data.value = resp
 }

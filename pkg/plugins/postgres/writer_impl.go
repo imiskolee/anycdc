@@ -38,7 +38,7 @@ func (w *Writer) execute(e core.Event) error {
 	w.opt.Logger.Debug("start convert event %+v,schema=%+v", schema)
 	newEvent := e
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
-	sql, params := eventToSQL(&newEvent)
+	sql, params := common_sql.EventToSQL(w.connector.Type, &newEvent)
 	err := w.conn.Exec(sql, params...).Error
 	if err != nil {
 		w.opt.Logger.Error("can not execute event:%s,%+v,%s", sql, params, err)
@@ -75,7 +75,6 @@ func (w *Writer) eventToSQL(e *core.Event) (string, []interface{}) {
 	}
 	newEvent := e
 	newEvent.Payload = schema.ConvertRecord(newEvent.Payload)
-	sql, params := eventToSQL(newEvent)
+	sql, params := common_sql.EventToSQL(w.connector.Type, newEvent)
 	return sql, params
-
 }
