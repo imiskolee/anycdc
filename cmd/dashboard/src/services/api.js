@@ -187,7 +187,10 @@ class APISDK {
         return this._request(`/tasks/${id}/table_logs`, 'GET');
     }
     async TaskRotateTo(id,data) {
-        return this._request(`/tasks/${id}/rotate`, 'POST',data);
+        return this._request(`/tasks/${id}/rotate`, 'PUT',data);
+    }
+    async TaskTableResync(id) {
+        return this._request(`/task_tables/${id}/resync`, 'PUT');
     }
 }
 

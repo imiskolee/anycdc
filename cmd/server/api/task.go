@@ -127,3 +127,27 @@ func GetTaskTableLogs(g *gin.Context) {
 	}
 	Success(g, "logs", tableLogs)
 }
+
+func TaskTableResync(g *gin.Context) {
+	id := g.Param("id")
+	var taskTable model.TaskTable
+	if err := model.DB().Where("id = ?", id).Last(&taskTable).Error; err != nil {
+		Error(g, http.StatusBadRequest, "can not get task table")
+		return
+	}
+	if err := runtime.R.StopTask(taskTable.TaskID); err != nil {
+		Error(g, http.StatusBadRequest, "can not stop task "+err.Error())
+		return
+	}
+	taskTable.DumperState = model.DumperStateInitialed
+	taskTable.TotalDumped = 0
+	if err := model.DB().Save(&taskTable).Error; err != nil {
+		Error(g, http.StatusBadRequest, "can not save task table")
+		return
+	}
+	if err := runtime.R.StartTask(taskTable.TaskID); err != nil {
+		Error(g, http.StatusBadRequest, "can not start task")
+		return
+	}
+	Success(g, "success", true)
+}

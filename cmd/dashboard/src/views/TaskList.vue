@@ -48,7 +48,7 @@
         <a-table :columns="tableLogColumns" :data-source="tableLogs">
           <template #bodyCell="{ column, record }">
             <div v-if="column.key === 'action'">
-              <a-button type="link">Re-sync</a-button>
+              <a-button type="link" @click="onResync(record)">Re-sync</a-button>
             </div>
             <div v-if="column.key !== 'action'">
 {{record[column.key]}}
@@ -176,6 +176,11 @@ function openLogHandler(record) {
 async function onPositionUpdate() {
   await sdk.TaskRotateTo(currentTask.value.id,{last_cdc_position:currentTask.value.last_cdc_position})
   openPositionUpdate.value = false;
+  window.location.reload()
+}
+
+async function onResync(record) {
+  await sdk.TaskTableResync(record['id'])
   window.location.reload()
 }
 

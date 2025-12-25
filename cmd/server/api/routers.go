@@ -66,7 +66,8 @@ func Start() {
 	server.PUT("/api/tasks/:id/stop", StopTask)
 	server.GET("/api/tasks/:id/logs", GetTaskLog)
 	server.GET("/api/tasks/:id/table_logs", GetTaskTableLogs)
-	server.POST("/api/tasks/:id/rotate", TaskRotateTo)
+	server.PUT("/api/tasks/:id/rotate", TaskRotateTo)
+	server.PUT("/api/task_tables/:id/resync", TaskTableResync)
 	server.POST("/api/utils/test_connector", TestConnector)
 	server.POST("/api/utils/log_tail", LogTailHandler)
 
