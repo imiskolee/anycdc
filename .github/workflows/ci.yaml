@@ -66,6 +66,3 @@ jobs:
           context: .
           push: true
           tags: miskolee/anycdc:${{ steps.extract_tag.outputs.TAG }}
-
-          cache-from: type=registry,ref=imiskolee/anycdc:build-cache
-          cache-to: type=registry,ref=imiskolee/anycdc:build-cache,mode=max
