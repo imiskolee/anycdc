@@ -1,0 +1,12 @@
+# sync all tables from reader.connector to writers.connector(2 destinations)
+name: pg_task_1
+reader:
+  connector: test_pg_1
+  extras:
+    publication_name: test_pg_1_publication
+    slot_name: test_pg_1_slot
+  tables:
+    - field_types
+writers:
+  - connector: test_mysql_1
+  - connector: test_pg_2

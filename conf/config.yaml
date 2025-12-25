@@ -1,0 +1,14 @@
+data_dir: .
+log_dir: ./logs
+log_level: debug
+tester: false
+admin:
+  listen: :8971
+  tester: false
+  database:
+    type: postgres
+    host: 127.0.0.1
+    port: 15600
+    username: root
+    password: anycdc
+    database: anycdc_test
