@@ -189,8 +189,10 @@ class APISDK {
     async TaskRotateTo(id,data) {
         return this._request(`/tasks/${id}/rotate`, 'PUT',data);
     }
-    async TaskTableResync(id) {
-        return this._request(`/task_tables/${id}/resync`, 'PUT');
+    async TaskTableResync(id,lastDumperKey) {
+        return this._request(`/task_tables/${id}/resync`, 'PUT',{
+            last_dumper_key : lastDumperKey
+        });
     }
 }
 

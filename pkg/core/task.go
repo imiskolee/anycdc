@@ -52,13 +52,13 @@ func (m *metric) add(e *Event) {
 
 	if e.SourceSchema != nil {
 		pks := e.SourceSchema.GetPrimaryKeyNames()
-		var lastSyncRecord EventRecord
+		lastSyncRecord := make(map[string]interface{})
 		for _, pk := range pks {
 			val, err := e.Record.FieldByName(pk)
 			if err != nil {
 				continue
 			}
-			lastSyncRecord.Set(pk, val.Value)
+			lastSyncRecord[pk] = val.Value.V
 		}
 		met.data.LastSyncedKeys = &lastSyncRecord
 	}

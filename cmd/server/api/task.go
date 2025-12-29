@@ -130,6 +130,12 @@ func GetTaskTableLogs(g *gin.Context) {
 
 func TaskTableResync(g *gin.Context) {
 	id := g.Param("id")
+	var body struct {
+		LastDumperKey string `json:"last_dumper_key"`
+	}
+	if err := Parse(g, &body); err != nil {
+		return
+	}
 	var taskTable model.TaskTable
 	if err := model.DB().Where("id = ?", id).Last(&taskTable).Error; err != nil {
 		Error(g, http.StatusBadRequest, "can not get task table")
@@ -142,7 +148,7 @@ func TaskTableResync(g *gin.Context) {
 	if err := model.DB().Table(taskTable.TableName()).Where("id=?", taskTable.ID).Updates(map[string]interface{}{
 		"dumper_state":    model.DumperStateInitialed,
 		"total_dumped":    0,
-		"last_dumper_key": "",
+		"last_dumper_key": body.LastDumperKey,
 	}).Error; err != nil {
 		Error(g, http.StatusBadRequest, "can not save task table")
 		return

@@ -66,11 +66,18 @@ func (d *dumper) StartDumpTable(table *model.TaskTable) error {
 	}
 	var lastRecord *core.EventRecord
 	if table.LastDumperKey != "" {
-		var record core.EventRecord
+		record := make(map[string]interface{})
 		if err := json.Unmarshal([]byte(table.LastDumperKey), &record); err != nil {
 			return err
 		}
-		lastRecord = &record
+		lastRecord = &core.EventRecord{}
+		for k, v := range record {
+			f, ok := sch.GetFieldByName(k)
+			if !ok {
+				continue
+			}
+			lastRecord.Set(k, types.NewTypedData(f.DataType, v))
+		}
 	}
 	total := 0
 	batchSize := d.opt.BatchSize

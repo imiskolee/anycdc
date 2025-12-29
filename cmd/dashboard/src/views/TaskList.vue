@@ -47,6 +47,10 @@
       </template>
     </data-table>
   </div>
+  <a-modal v-model:open="openResyncUpdate" title="Change CDC Position To" @ok="onResyncUpdate">
+    <a-textarea style="height: 5em" v-model:value="currentTable.last_dumper_key" placeholder="follow reader cdc position format,empty will be rotate to latest"></a-textarea>
+    <p class="description">Please set to empty if want to full resync.</p>
+  </a-modal>
   <a-modal v-model:open="openModal" :title="'Task:' + currentTask.name"  width="100%"
            wrap-class-name="full-modal" :key="modalKey">
     <a-tabs>
@@ -72,6 +76,7 @@
     <p class="description">Please set to empty if want to rotate to latest state.</p>
   </a-modal>
 </template>
+
 <script setup>
 import DataTable from "../components/DataTable.vue";
 import taskModel from "../services/objects/task.js"
@@ -79,9 +84,11 @@ import sdk from "../services/api.js"
 import LogTail from "../components/LogTail.vue";
 import {ref} from "vue";
 const currentTask = ref({})
+const currentTable = ref({})
 const openModal = ref(false)
 const modalKey = ref((new Date()).toISOString())
 const openPositionUpdate = ref(false)
+const openResyncUpdate = ref(false)
 function updateModalKey() {
   modalKey.value = (new Date()).toISOString()
 }
@@ -186,7 +193,13 @@ async function onPositionUpdate() {
 }
 
 async function onResync(record) {
-  await sdk.TaskTableResync(record['id'])
+  currentTable.value = record
+  openResyncUpdate.value = true
+  openModal.value = false
+}
+
+async function onResyncUpdate() {
+  await sdk.TaskTableResync(currentTable.value['id'],currentTable.value['last_dumper_key'])
   window.location.reload()
 }
 
