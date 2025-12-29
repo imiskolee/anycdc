@@ -28,6 +28,9 @@ export default {
             hiddenOnList : true,
         },
         {
+            name : "cdc_info"
+        },
+        {
             name : "debug_enabled",
             type : "switch",
             hiddenOnList: true

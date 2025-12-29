@@ -55,6 +55,7 @@ type Task struct {
 	LogMode         string     `gorm:"column:log_mode;type:varchar(255)" json:"log_mode"`
 	BatchSize       int        `gorm:"column:batch_size;type:int" json:"batch_size"`
 	LastCDCPosition string     `gorm:"column:last_cdc_position;type:varchar(255)" json:"last_cdc_position"`
+	LastCDCAt       *time.Time `gorm:"column:last_cdc_at;type:timestamp" json:"last_cdc_at"`
 	LastStarted     *time.Time `gorm:"column:last_started;type:timestamp" json:"last_started"`
 	Status          string     `gorm:"column:status;type:varchar(255)" json:"status"`
 }

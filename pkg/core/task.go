@@ -6,6 +6,7 @@ import (
 	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/model"
 	"sync"
+	"time"
 )
 
 const (
@@ -14,8 +15,9 @@ const (
 )
 
 type taskLogState struct {
-	state *model.TaskTable
-	data  model.TaskTableMetric
+	state       *model.TaskTable
+	lastEventAt *time.Time
+	data        model.TaskTableMetric
 }
 
 type metric struct {
@@ -272,7 +274,8 @@ func (s *Task) startDumper() error {
 			if err := reader.Prepare(); err != nil {
 				return s.logger.Errorf("can not prepare reader: %s", err)
 			}
-			s.state.Task.LastCDCPosition = reader.LatestPosition()
+			po := reader.LatestPosition()
+			s.state.Task.LastCDCPosition = po.Position
 			s.logger.Info("cdc reader will read from position %s", s.state.Task.LastCDCPosition)
 			if err := s.state.Task.PartialUpdates(map[string]interface{}{
 				"last_cdc_position": s.state.Task.LastCDCPosition,
@@ -351,27 +354,29 @@ func (s *Task) ReaderEvent(e Event) error {
 }
 
 func (s *Task) Save() error {
-	needSummary := false
 	if s.dumperRunning {
+		s.summary()
 		s.metric.flush(model.TaskModeDumper)
 		return nil
 	}
 	if s.cdcRunning {
 		currentPosition := s.reader.CurrentPosition()
-		if currentPosition != s.state.Task.LastCDCPosition {
-			s.state.Task.LastCDCPosition = currentPosition
-			if err := s.state.Task.PartialUpdates(map[string]interface{}{
+		if currentPosition.Position != s.state.Task.LastCDCPosition {
+			s.summary()
+			s.state.Task.LastCDCPosition = currentPosition.Position
+			updates := map[string]interface{}{
 				"last_cdc_position": s.state.Task.LastCDCPosition,
-			}); err != nil {
+			}
+			if currentPosition.LastEventAt != nil {
+				updates["last_cdc_at"] = currentPosition.LastEventAt
+			}
+			if err := s.state.Task.PartialUpdates(updates); err != nil {
 				s.logger.Error("can not save latest cdc position")
 			}
-			needSummary = true
 		}
 		s.metric.flush(model.TaskModeCDC)
 	}
-	if needSummary {
-		s.summary()
-	}
+
 	return nil
 }
 

@@ -73,24 +73,23 @@ func (d *dumper) StartDumpTable(table *model.TaskTable) error {
 			return d.opt.Logger.Errorf("dump failed,can not query batch %v", err)
 		}
 		if len(batch) > 0 {
+			if lastRecord != nil {
+				batch = batch[1:]
+			}
 			if err := d.opt.Subscriber.DumperEvent(sch, batch); err != nil {
 				return d.opt.Logger.Errorf("dump failed,can not handle batch %v", err)
 			}
-			if lastRecord != nil {
-				total += len(batch) - 1
-			} else {
-				total = len(batch)
-			}
+			total = len(batch)
 		}
 		if now.Sub(lastLogAt) > 30*time.Second {
 			lastLogAt = now
-			d.opt.Logger.Info("successful dump table %s, records %d", table, total)
+			d.opt.Logger.Info("successful dump table %s, records %d", table.Table, total)
 		}
 		if len(batch) > 0 {
 			lastRecord = &batch[len(batch)-1]
 		}
-		if len(batch) < batchSize {
-			d.opt.Logger.Info("successful dump records %d on table %s,", total, table)
+		if len(batch) < (batchSize - 1) {
+			d.opt.Logger.Info("successful dump records %d on table %s,", total, table.Table)
 			break
 		}
 	}

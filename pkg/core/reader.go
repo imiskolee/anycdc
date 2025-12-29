@@ -18,14 +18,14 @@ type ReaderOption struct {
 
 type ReaderPosition struct {
 	Position    string
-	LastEventAt time.Time
+	LastEventAt *time.Time
 }
 
 type Reader interface {
 	Prepare() error
 	Start() error
 	Stop() error
-	LatestPosition() string
-	CurrentPosition() string
+	LatestPosition() ReaderPosition
+	CurrentPosition() ReaderPosition
 	Release() error
 }

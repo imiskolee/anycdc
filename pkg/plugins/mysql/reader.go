@@ -29,6 +29,7 @@ type reader struct {
 	done           chan bool
 	retries        int
 	conn           *gorm.DB
+	lastEventAt    *time.Time
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
@@ -104,7 +105,7 @@ func (r *reader) Start() error {
 	r.syncer = replication.NewBinlogSyncer(r.binlogCfg)
 	latestPosition := r.opt.Task.LastCDCPosition
 	if latestPosition == "" {
-		latestPosition = r.LatestPosition()
+		latestPosition = r.LatestPosition().Position
 	}
 	if err := json.Unmarshal([]byte(r.opt.Task.LastCDCPosition), &r.latestPosition); err != nil {
 		r.opt.Logger.Error("can not parse last cdc position: %v", err)
@@ -150,6 +151,8 @@ func (r *reader) Start() error {
 		r.retries = 0
 		if event.Header.EventType == replication.XID_EVENT {
 			r.latestPosition = r.syncer.GetNextPosition()
+			pt := time.Unix(int64(event.Header.Timestamp), 0)
+			r.lastEventAt = &pt
 		}
 	}
 end:
@@ -170,12 +173,12 @@ func (r *reader) Stop() error {
 	return nil
 }
 
-func (r *reader) LatestPosition() string {
+func (r *reader) LatestPosition() core.ReaderPosition {
 	sql := "SHOW MASTER STATUS"
 	var ver string
 	if err := r.conn.Raw("SELECT VERSION()").Scan(&ver).Error; err != nil {
 		r.opt.Logger.Error("can not get latest master position: %v", err)
-		return ""
+		return core.ReaderPosition{}
 	}
 	if ver > "8.0.34" {
 		sql = "SHOW BINARY LOG STATUS"
@@ -186,19 +189,19 @@ func (r *reader) LatestPosition() string {
 	}
 	if err := r.conn.Raw(sql).Find(&ret).Error; err != nil {
 		r.opt.Logger.Error("can not get latest master position: %v", err)
-		return ""
+		return core.ReaderPosition{}
 	}
 	pos := mysql.Position{
 		Name: ret.File,
 		Pos:  ret.Position,
 	}
 	j, _ := json.Marshal(pos)
-	return string(j)
+	return core.ReaderPosition{Position: string(j), LastEventAt: r.lastEventAt}
 }
 
-func (r *reader) CurrentPosition() string {
+func (r *reader) CurrentPosition() core.ReaderPosition {
 	j, _ := json.Marshal(r.latestPosition)
-	return string(j)
+	return core.ReaderPosition{Position: string(j), LastEventAt: r.lastEventAt}
 }
 
 func (r *reader) handler(e *replication.BinlogEvent) error {

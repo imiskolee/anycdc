@@ -139,9 +139,11 @@ func TaskTableResync(g *gin.Context) {
 		Error(g, http.StatusBadRequest, "can not stop task "+err.Error())
 		return
 	}
-	taskTable.DumperState = model.DumperStateInitialed
-	taskTable.TotalDumped = 0
-	if err := model.DB().Save(&taskTable).Error; err != nil {
+	if err := model.DB().Table(taskTable.TableName()).Where("id=?", taskTable.ID).Updates(map[string]interface{}{
+		"dumper_state":    model.DumperStateInitialed,
+		"total_dumped":    0,
+		"last_dumper_key": "",
+	}).Error; err != nil {
 		Error(g, http.StatusBadRequest, "can not save task table")
 		return
 	}

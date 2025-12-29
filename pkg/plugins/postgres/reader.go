@@ -31,6 +31,7 @@ type reader struct {
 	retries         int
 	relations       map[uint32]pglogrepl.RelationMessageV2
 	lastHeartBeatAt time.Time
+	lastEventAt     *time.Time
 }
 
 func newReader(ctx context.Context, opts interface{}) core.Reader {
@@ -202,7 +203,14 @@ func (r *reader) handler(msg pgproto3.BackendMessage) error {
 	case *pgproto3.CopyData:
 		switch msg.Data[0] {
 		case pglogrepl.PrimaryKeepaliveMessageByteID:
-
+			ev, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data)
+			if err == nil {
+				if r.lastEventAt == nil {
+					r.lastEventAt = new(time.Time)
+				}
+				*r.lastEventAt = ev.ServerTime
+				r.latestLSN = ev.ServerWALEnd
+			}
 			break
 		case pglogrepl.XLogDataByteID:
 			return r.handleXLogData(msg)
@@ -274,6 +282,10 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		}
 	}
 	r.latestLSN = xld.ServerWALEnd
+	if r.lastEventAt == nil {
+		r.lastEventAt = new(time.Time)
+	}
+	*r.lastEventAt = xld.ServerTime
 	return nil
 }
 
@@ -296,16 +308,22 @@ func (r *reader) convertToEventRecord(rel *pglogrepl.RelationMessageV2, columns 
 	return record, nil
 }
 
-func (r *reader) LatestPosition() string {
+func (r *reader) LatestPosition() core.ReaderPosition {
 	lsn, err := r.replication.getLatestPosition()
 	if err != nil {
 		r.opt.Logger.Error("can not get latest position %s", err)
 	}
-	return lsn.String()
+	return core.ReaderPosition{
+		Position: lsn.String(),
+	}
 }
 
-func (r *reader) CurrentPosition() string {
-	return r.latestLSN.String()
+func (r *reader) CurrentPosition() core.ReaderPosition {
+	lsn := r.latestLSN
+	return core.ReaderPosition{
+		Position:    lsn.String(),
+		LastEventAt: r.lastEventAt,
+	}
 }
 
 func (r *reader) Release() error {

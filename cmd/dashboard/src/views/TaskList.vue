@@ -9,6 +9,12 @@
       <template #sync_info="record,index,column">
         {{record.record.text.last_cdc_position}}
       </template>
+      <template #cdc_info="record,index,column">
+        <a-tooltip :title="'last_cdc_at=' + record.record.text.last_cdc_at">
+          <span v-if="record.record.text.last_cdc_at">{{formatGoTimeToNowDuration(record.record.text.last_cdc_at)}}</span>
+          <span v-if="!record.record.text.last_cdc_at">--</span>
+        </a-tooltip>
+      </template>
       <template #status="record,index,column">
         <a-tooltip trigger="hover" :title="'Status:' +record.record.text.status +  ' CDC Status:' + record.record.text.cdc_status">
           <div class="circle red" v-if="record.record.text.status === 'Active' && record.record.text.cdc_status === 'Failed'"></div>
@@ -183,6 +189,51 @@ async function onResync(record) {
   await sdk.TaskTableResync(record['id'])
   window.location.reload()
 }
+
+function formatGoTimeToNowDuration(goTimeStr) {
+  // 解析Golang time.Time字符串为JS Date对象
+  const parseGoTime = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return null;
+
+    // 适配Golang time.Time核心格式：提取 年月日 时分秒
+    const timeRegex = /(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\.\d+)?/;
+    const match = timeStr.match(timeRegex);
+    if (!match) return null;
+
+    // 拼接为JS可解析的时间字符串
+    const jsTimeStr = `${match[1]} ${match[2]}`;
+    const date = new Date(jsTimeStr);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // 1. 解析输入的Golang时间字符串
+  const targetDate = parseGoTime(goTimeStr);
+  if (!targetDate) {
+    return 'Invalid time format';
+  }
+
+  // 2. 计算与当前时间（Date.now()）的间隔（取绝对值，单位：秒）
+  const now = Date.now(); // 固定使用当前时间戳对比
+  const diffSeconds = Math.abs(Math.floor((now - targetDate.getTime()) / 1000));
+
+  // 3. 转换为时分秒的友好文本
+  const hours = Math.floor(diffSeconds / 3600);
+  const minutes = Math.floor((diffSeconds % 3600) / 60);
+  const seconds = diffSeconds % 60;
+
+  // 构建文本片段（仅保留非0的单位，秒数兜底）
+  const parts = [];
+  if (hours > 0) {
+    parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+  }
+  if (minutes > 0) {
+    parts.push(`${minutes} ${minutes === 1 ? 'min' : 'mins'}`);
+  }
+  parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+
+  return parts.join(' ');
+}
+
 
 </script>
 
