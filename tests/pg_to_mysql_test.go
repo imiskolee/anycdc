@@ -32,7 +32,7 @@ func TestPGToMySQL(t *testing.T) {
 	_ = writerDB.AutoMigrate(&BasicTypeMySQL{})
 
 	readerDB.Exec("TRUNCATE TABLE basic_types")
-	writerDB.Exec("TRUNCATE TABLE basic_types")
+	writerDB.Exec("DROP TABLE basic_types")
 	taskName := "test_pg_to_pg"
 	tt, err := model.GetTaskByName(taskName)
 	if err == nil {
@@ -49,7 +49,7 @@ func TestPGToMySQL(t *testing.T) {
 	task.DumperEnabled = true
 	task.CDCEnabled = true
 	task.DebugEnabled = true
-	task.MigrateEnabled = false
+	task.MigrateEnabled = true
 	model.DB().Create(&task)
 
 	tt = &task

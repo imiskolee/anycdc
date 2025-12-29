@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/core/types"
 )
 
@@ -42,6 +43,21 @@ func (e *EventRecord) Set(name string, val types.TypedData) {
 	e.Columns = append(e.Columns, EventField{name, val})
 }
 
+func (s *EventRecord) ConvertRecord(sch *schemas.Table) EventRecord {
+	fields := make(map[string]types.TypedData)
+	for _, field := range s.Columns {
+		fields[field.Name] = field.Value
+	}
+	var newRecord EventRecord
+	for _, value := range sch.Columns {
+		if _, ok := fields[value.Name]; !ok {
+			continue
+		}
+		newRecord.Set(value.Name, fields[value.Name])
+	}
+	return newRecord
+}
+
 type Field struct {
 	Name  string
 	Value interface{}
@@ -53,5 +69,5 @@ type Event struct {
 	SourceTableName string
 	Record          EventRecord
 	OldRecord       *EventRecord //for update
-	SourceSchema    *SimpleTableSchema
+	SourceSchema    *schemas.Table
 }

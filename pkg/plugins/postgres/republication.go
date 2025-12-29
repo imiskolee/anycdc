@@ -232,3 +232,21 @@ func (r *replication) SyncAll() error {
 
 	return nil
 }
+
+func (r *replication) Release() error {
+	{
+		sql := fmt.Sprintf(`DROP PUBLICATION IF EXISTS %s;`, r.publicationName)
+		_, err := r.conn.Exec(context.Background(), sql)
+		if err != nil {
+			return err
+		}
+	}
+	{
+		sql := fmt.Sprintf("SELECT pg_drop_replication_slot('%s');", r.slotName)
+		_, err := r.conn.Exec(context.Background(), sql)
+		if err != nil {
+			return nil
+		}
+	}
+	return nil
+}

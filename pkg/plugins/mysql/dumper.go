@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/core/types"
 	"github.com/imiskolee/anycdc/pkg/model"
 	"github.com/imiskolee/anycdc/pkg/plugins/common_sql"
@@ -71,13 +72,15 @@ func (d *dumper) StartDumpTable(table *model.TaskTable) error {
 		if err != nil {
 			return d.opt.Logger.Errorf("dump failed,can not query batch %v", err)
 		}
-		if err := d.opt.Subscriber.DumperEvent(sch, batch); err != nil {
-			return d.opt.Logger.Errorf("dump failed,can not handle batch %v", err)
-		}
-		if lastRecord != nil {
-			total += len(batch) - 1
-		} else {
-			total = len(batch)
+		if len(batch) > 0 {
+			if err := d.opt.Subscriber.DumperEvent(sch, batch); err != nil {
+				return d.opt.Logger.Errorf("dump failed,can not handle batch %v", err)
+			}
+			if lastRecord != nil {
+				total += len(batch) - 1
+			} else {
+				total = len(batch)
+			}
 		}
 		if now.Sub(lastLogAt) > 30*time.Second {
 			lastLogAt = now
@@ -94,7 +97,7 @@ func (d *dumper) StartDumpTable(table *model.TaskTable) error {
 	return nil
 }
 
-func (d *dumper) queryBatch(sch *core.SimpleTableSchema, batchSize int, lastRecord *core.EventRecord) ([]core.EventRecord, error) {
+func (d *dumper) queryBatch(sch *schemas.Table, batchSize int, lastRecord *core.EventRecord) ([]core.EventRecord, error) {
 	generator := common_sql.NewSQLGenerator(d.opt.Connector, sch, types.NewDefaultTypeMap())
 	sql, vals, err := generator.Dumper(batchSize, lastRecord)
 	if err != nil {
@@ -146,7 +149,7 @@ func rowToMap(rows *sql.Rows) ([]core.EventRecord, error) {
 		for k, column := range columns {
 			colType := columnTypes[k]
 			dest := values[k]
-			typ := getBuiltType(strings.ToLower(colType.DatabaseTypeName()))
+			typ, _ := getBuiltType(strings.ToLower(colType.DatabaseTypeName()))
 			td, err := dataTypes.Encode(typ, dest)
 			if err != nil {
 				return nil, err

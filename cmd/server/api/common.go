@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"io"
 	"net/http"
 )
 
@@ -10,6 +12,10 @@ func Parse(ctx *gin.Context, dest interface{}) error {
 	if err := ctx.BindJSON(dest); err != nil {
 		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("Can not parse request body:%s", err).Error())
 		return err
+	}
+	bodyBytes, ok := ctx.Get("cached_body")
+	if ok {
+		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes.([]byte)))
 	}
 	return nil
 }

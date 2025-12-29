@@ -3,13 +3,14 @@ package mysql
 import (
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/core/types"
 	"github.com/imiskolee/anycdc/pkg/model"
 	"strings"
 )
 
-func batchUpsert(connector *model.Connector, sch *core.SimpleTableSchema, typeMap *types.Map, records []core.EventRecord) (string, []interface{}, error) {
-	primaryKeys := sch.GetPrimaryKeys()
+func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.Map, records []core.EventRecord) (string, []interface{}, error) {
+	primaryKeys := sch.GetPrimaryKeyNames()
 	record := records[0]
 	columns := make([]string, 0, len(record.Columns))
 	values := make([]interface{}, 0, len(columns)*len(records))

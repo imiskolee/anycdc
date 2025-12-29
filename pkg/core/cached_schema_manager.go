@@ -2,11 +2,12 @@ package core
 
 import (
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"time"
 )
 
 type cachedSchema struct {
-	schema     SimpleTableSchema
+	schema     schemas.Table
 	lastSyncAt time.Time
 }
 
@@ -22,7 +23,7 @@ func NewCachedSchemaManager(factory SchemaManager) SchemaManager {
 	}
 }
 
-func (s *CachedSchemaManager) Get(dbName string, tableName string) *SimpleTableSchema {
+func (s *CachedSchemaManager) Get(dbName string, tableName string) *schemas.Table {
 	now := time.Now()
 	key := fmt.Sprintf("%s.%s", dbName, tableName)
 	if t, ok := s.tables[key]; ok && now.Sub(t.lastSyncAt) < 1*time.Minute {
@@ -38,6 +39,6 @@ func (s *CachedSchemaManager) Get(dbName string, tableName string) *SimpleTableS
 	return schema
 }
 
-func (s *CachedSchemaManager) CreateTable(database string, table *SimpleTableSchema) error {
-	return s.factory.CreateTable(database, table)
+func (s *CachedSchemaManager) CreateTable(table *schemas.Table) error {
+	return s.factory.CreateTable(table)
 }

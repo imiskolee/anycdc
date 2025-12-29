@@ -35,7 +35,9 @@ function toData(form) {
 
 function onCreate(record) {
   return async function() {
-    await sdk.Create("tasks",toData(record.form))
+    const data = toData(record.form)
+    data['status'] = 'Inactive'
+    await sdk.Create("tasks",data)
     await router.push("/tasks")
   }
 }

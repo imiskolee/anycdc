@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/model"
 	"sync"
 )
@@ -48,7 +49,7 @@ func (m *metric) add(e *Event) {
 	}
 
 	if e.SourceSchema != nil {
-		pks := e.SourceSchema.GetPrimaryKeys()
+		pks := e.SourceSchema.GetPrimaryKeyNames()
 		var lastSyncRecord EventRecord
 		for _, pk := range pks {
 			val, err := e.Record.FieldByName(pk)
@@ -325,7 +326,10 @@ func (s *Task) stopDumper() error {
 	return err
 }
 
-func (s *Task) DumperEvent(sch *SimpleTableSchema, records []EventRecord) error {
+func (s *Task) DumperEvent(sch *schemas.Table, records []EventRecord) error {
+	if len(records) < 1 {
+		return nil
+	}
 	if err := s.writer.ExecuteBatch(sch.Name, records); err != nil {
 		return err
 	}
@@ -373,10 +377,6 @@ func (s *Task) Save() error {
 
 func (s *Task) migrateTables(readerPlugin *Plugin, writerPlugin *Plugin) error {
 	s.logger.Info("starting migrating tables")
-	if readerPlugin.Name != writerPlugin.Name {
-		s.logger.Info("skip migrate table, just supports same database currently")
-		return nil
-	}
 	var readerSchManager SchemaManager
 	var writerSchManager SchemaManager
 	if readerPlugin.SchemaFactory == nil {
@@ -406,14 +406,14 @@ func (s *Task) migrateTables(readerPlugin *Plugin, writerPlugin *Plugin) error {
 func (s *Task) migrateTable(readerSchManager SchemaManager, writerSchManager SchemaManager, tableName string) error {
 	readerTableSchema := readerSchManager.Get(s.state.Reader.Database, tableName)
 	writerTableSchema := writerSchManager.Get(s.state.Writer.Database, tableName)
-	if writerTableSchema != nil && len(writerTableSchema.Fields) > 0 {
+	if writerTableSchema != nil && len(writerTableSchema.Columns) > 0 {
 		s.logger.Info("skip migrate table %s, because of already exists on writer connection", tableName)
 		return nil
 	}
 	if len(readerTableSchema.GetPrimaryKeys()) < 1 {
 		return s.logger.Errorf("can not find primary key for table %s", tableName)
 	}
-	if err := writerSchManager.CreateTable(s.state.Writer.Database, readerTableSchema); err != nil {
+	if err := writerSchManager.CreateTable(readerTableSchema); err != nil {
 		return s.logger.Errorf("can not migrate table %s, %s", tableName, err)
 	}
 	s.logger.Info("success migrate table %s", tableName)
@@ -478,4 +478,11 @@ func (s *Task) summary() {
 	for _, m := range s.metric.metrics {
 		s.logger.Info("  table %s I=%d, U=%d, D=%d", m.state.Table, m.data.Inserted, m.data.Updated, m.data.Deleted)
 	}
+}
+
+func (s *Task) Release() error {
+	if s.reader != nil {
+		return s.reader.Release()
+	}
+	return nil
 }

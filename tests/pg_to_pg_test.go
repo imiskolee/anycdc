@@ -74,6 +74,8 @@ func TestPgToPg(t *testing.T) {
 	time.Sleep(2 * time.Second)
 	_ = coreTask.Stop()
 	time.Sleep(1 * time.Second)
+	_ = coreTask.Release()
+
 	var c1 int64
 	var c2 int64
 	readerDB.Model(&BasicType{}).Count(&c1)

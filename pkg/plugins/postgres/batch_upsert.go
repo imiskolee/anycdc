@@ -3,12 +3,13 @@ package postgres
 import (
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/core/types"
 	"strings"
 )
 
-func batchUpsert(sch *core.SimpleTableSchema, typeMap *types.Map, records []core.EventRecord) (string, []interface{}, error) {
-	primaryKeys := sch.GetPrimaryKeys()
+func batchUpsert(sch *schemas.Table, typeMap *types.Map, records []core.EventRecord) (string, []interface{}, error) {
+	primaryKeys := sch.GetPrimaryKeyNames()
 	record := records[0]
 	columns := make([]string, 0, len(record.Columns))
 	values := make([]interface{}, 0, len(columns)*len(records))

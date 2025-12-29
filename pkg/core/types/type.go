@@ -1,34 +1,17 @@
 package types
 
-type Type uint
-
-const (
-	TypeUnknown Type = iota
-	TypeNull
-	TypeInt
-	TypeUint
-	TypeFloat64
-	TypeDecimal
-	TypeString
-	TypeBool
-	TypeUUID
-	TypeBlob
-	TypeJSON
-	TypeTimestamp
-	TypeDate
-	TypeTime
-)
+import "github.com/imiskolee/anycdc/pkg/core/schemas"
 
 type Decoder func(v interface{}) (interface{}, error)
 
 type Encoder func(v interface{}) (interface{}, error)
 
 type TypedData struct {
-	T Type
+	T schemas.Type
 	V interface{}
 }
 
-func NewTypedData(t Type, v interface{}) TypedData {
+func NewTypedData(t schemas.Type, v interface{}) TypedData {
 	return TypedData{
 		T: t,
 		V: v,
@@ -37,32 +20,32 @@ func NewTypedData(t Type, v interface{}) TypedData {
 
 func NewNullData() TypedData {
 	return TypedData{
-		T: TypeNull,
+		T: schemas.TypeNull,
 		V: nil,
 	}
 }
 
 type Map struct {
-	encoders map[Type]Encoder
-	decoders map[Type]Decoder
+	encoders map[schemas.Type]Encoder
+	decoders map[schemas.Type]Decoder
 }
 
 func NewMap() *Map {
 	return &Map{
-		encoders: make(map[Type]Encoder),
-		decoders: make(map[Type]Decoder),
+		encoders: make(map[schemas.Type]Encoder),
+		decoders: make(map[schemas.Type]Decoder),
 	}
 }
 
-func (s *Map) RegisterEncoder(t Type, encoder Encoder) {
+func (s *Map) RegisterEncoder(t schemas.Type, encoder Encoder) {
 	s.encoders[t] = encoder
 }
 
-func (s *Map) RegisterDecoder(t Type, decoder Decoder) {
+func (s *Map) RegisterDecoder(t schemas.Type, decoder Decoder) {
 	s.decoders[t] = decoder
 }
 
-func (s *Map) Encode(t Type, v interface{}) (TypedData, error) {
+func (s *Map) Encode(t schemas.Type, v interface{}) (TypedData, error) {
 	switch val := v.(type) {
 	case TypedData:
 		return val, nil
@@ -82,7 +65,7 @@ func (s *Map) Encode(t Type, v interface{}) (TypedData, error) {
 	val, err := e(v)
 	if err != nil {
 		return TypedData{
-			T: TypeUnknown,
+			T: schemas.TypeUnknown,
 		}, err
 	}
 	return TypedData{

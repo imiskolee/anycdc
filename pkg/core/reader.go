@@ -27,4 +27,5 @@ type Reader interface {
 	Stop() error
 	LatestPosition() string
 	CurrentPosition() string
+	Release() error
 }

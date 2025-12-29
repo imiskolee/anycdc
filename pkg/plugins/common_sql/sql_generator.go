@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/core/types"
 	"github.com/imiskolee/anycdc/pkg/model"
 	"strings"
@@ -17,11 +18,11 @@ var sqlQuotes = map[string]string{
 
 type SQLGenerator struct {
 	connector *model.Connector
-	schema    *core.SimpleTableSchema
+	schema    *schemas.Table
 	typeMap   *types.Map
 }
 
-func NewSQLGenerator(connector *model.Connector, schema *core.SimpleTableSchema, typeMap *types.Map) *SQLGenerator {
+func NewSQLGenerator(connector *model.Connector, schema *schemas.Table, typeMap *types.Map) *SQLGenerator {
 	return &SQLGenerator{
 		connector: connector,
 		schema:    schema,
@@ -45,7 +46,7 @@ func (s *SQLGenerator) Dumper(batchSize int, lastRecord *core.EventRecord) (stri
 	var whereClauses []string
 	var whereValues []interface{}
 	var orderByClauses []string
-	primaryKeys := s.schema.GetPrimaryKeys()
+	primaryKeys := s.schema.GetPrimaryKeyNames()
 
 	for _, pk := range primaryKeys {
 		orderByClauses = append(orderByClauses, fmt.Sprintf("%s ASC", s.quote(pk)))
@@ -83,7 +84,7 @@ func (s *SQLGenerator) Dumper(batchSize int, lastRecord *core.EventRecord) (stri
 }
 
 func (s *SQLGenerator) toInsert(e core.Event) (string, []interface{}, error) {
-	primaryKeys := s.schema.GetPrimaryKeys()
+	primaryKeys := s.schema.GetPrimaryKeyNames()
 	columns := make([]string, 0, len(e.Record.Columns))
 	values := make([]interface{}, 0, len(e.Record.Columns))
 	updateClause := make([]string, 0, len(e.Record.Columns)-len(primaryKeys))
@@ -155,7 +156,7 @@ func (s *SQLGenerator) toInsert(e core.Event) (string, []interface{}, error) {
 }
 
 func (s *SQLGenerator) toUpdate(e core.Event) (string, []interface{}, error) {
-	primaryKeys := s.schema.GetPrimaryKeys()
+	primaryKeys := s.schema.GetPrimaryKeyNames()
 	setClauses := make([]string, 0, len(e.Record.Columns)-len(primaryKeys))
 	params := make([]interface{}, 0, len(e.Record.Columns)-len(primaryKeys))
 	whereClauses := make([]string, 0, len(primaryKeys))
@@ -194,25 +195,17 @@ func (s *SQLGenerator) toDelete(e core.Event) (string, []interface{}, error) {
 	return "", nil, nil
 }
 
-func (s *SQLGenerator) CreateTable(sourceSch *core.SimpleTableSchema) (string, error) {
+type CreateTableFieldDescriptionBuilder func(col schemas.Column) string
+
+func (s *SQLGenerator) CreateTable(sourceSch *schemas.Table, fieldBuilder CreateTableFieldDescriptionBuilder) (string, error) {
 	rawSQL := "CREATE TABLE IF NOT EXISTS " + s.quote(s.schema.Name) + " ("
 	var columns []string
 	var pkColumns []string
-	for _, f := range sourceSch.GetPrimaryKeys() {
+	for _, f := range sourceSch.GetPrimaryKeyNames() {
 		pkColumns = append(pkColumns, s.quote(f))
 	}
-	for _, field := range sourceSch.Fields {
-		notnull := ""
-		fieldType := field.RawDataType
-		if field.IsPrimaryKey || !field.Nullable {
-			notnull = "NOT NULL"
-		}
-		if field.ColumnLength > 0 {
-			fieldType = fmt.Sprintf("%s(%d)", fieldType, field.ColumnLength)
-		} else if field.NumericPrecision > 0 {
-			fieldType = fmt.Sprintf("%s(%d,%d)", fieldType, field.NumericPrecision, field.NumericScale)
-		}
-		columns = append(columns, fmt.Sprintf("%s %s %s", s.quote(field.Name), fieldType, notnull))
+	for _, field := range sourceSch.Columns {
+		columns = append(columns, fieldBuilder(field))
 	}
 	columns = append(columns, "PRIMARY KEY ("+strings.Join(pkColumns, ", ")+")")
 	rawSQL += strings.Join(columns, ",")

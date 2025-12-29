@@ -1,9 +1,12 @@
 package core
 
-import "github.com/imiskolee/anycdc/pkg/model"
+import (
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
+	"github.com/imiskolee/anycdc/pkg/model"
+)
 
 type DumperSubscriber interface {
-	DumperEvent(sch *SimpleTableSchema, records []EventRecord) error
+	DumperEvent(sch *schemas.Table, records []EventRecord) error
 }
 
 type DumperOption struct {

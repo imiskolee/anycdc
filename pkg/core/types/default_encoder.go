@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"reflect"
 	"strconv"
 )
 
@@ -144,6 +145,8 @@ func DefaultDateEncoder(val interface{}) (interface{}, error) {
 }
 
 func DefaultTimeEncoder(val interface{}) (interface{}, error) {
+	rt := reflect.TypeOf(val)
+	fmt.Println("RT=", rt.String())
 	return val, nil
 }
 

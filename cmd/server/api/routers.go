@@ -1,10 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"io"
 	"net/http"
 	"path/filepath"
 )
@@ -22,9 +24,31 @@ func getEngine() *gin.Engine {
 	return server
 }
 
+func CacheRequestBody() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 仅处理有请求体的方法（POST/PUT/PATCH等）
+		if c.Request.Method == http.MethodPost || c.Request.Method == http.MethodPut || c.Request.Method == http.MethodPatch {
+			// 读取原始请求体
+			bodyBytes, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
+				return
+			}
+
+			// 关键点1：将读取后的字节重新写回请求体（使用NopCloser避免关闭）
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			// 关键点2：将请求体缓存到gin.Context中，供后续二次Bind使用
+			c.Set("cached_body", bodyBytes)
+		}
+		c.Next()
+	}
+}
+
 func Start() {
 	InitPlugins()
 	server.Static("/ui", "./static")
+	server.Use(CacheRequestBody())
 	server.NoRoute(func(c *gin.Context) {
 		fmt.Println(c.Request.URL.String())
 		// 排除 API 请求（避免 API 路由被覆盖）

@@ -7,6 +7,7 @@ import (
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/replication"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"gorm.io/gorm"
 	"math/rand"
 	"time"
@@ -254,14 +255,13 @@ func (r *reader) handler(e *replication.BinlogEvent) error {
 	return nil
 }
 
-func (s *reader) rowsToEntry(schema *core.SimpleTableSchema, binlog *replication.RowsEvent) []core.EventRecord {
+func (s *reader) rowsToEntry(schema *schemas.Table, binlog *replication.RowsEvent) []core.EventRecord {
 	var records []core.EventRecord
 	for _, row := range binlog.Rows {
 		var record core.EventRecord
 		for idx, col := range row {
 			field, _ := schema.GetFieldByIndex(uint(idx))
-			builtType := getBuiltType(field.Type)
-			td, err := dataTypes.Encode(builtType, col)
+			td, err := dataTypes.Encode(field.DataType, col)
 			if err == nil {
 				record.Set(field.Name, td)
 			}
@@ -269,4 +269,8 @@ func (s *reader) rowsToEntry(schema *core.SimpleTableSchema, binlog *replication
 		records = append(records, record)
 	}
 	return records
+}
+
+func (s *reader) Release() error {
+	return nil
 }

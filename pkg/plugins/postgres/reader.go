@@ -92,6 +92,14 @@ func (r *reader) Prepare() error {
 		tables:          r.opt.Task.GetTables(),
 		logger:          r.opt.Logger,
 	}
+	return nil
+}
+
+func (r *reader) Start() error {
+	r.opt.Logger.Info("starting reader for task %s", r.opt.Task.Name)
+	defer (func() {
+		_ = r.Stop()
+	})()
 	if err := r.replication.syncPublication(); err != nil {
 		return r.opt.Logger.Errorf("can not prepare reader sync publication: %v", err)
 	}
@@ -111,11 +119,6 @@ func (r *reader) Prepare() error {
 		}
 		r.latestLSN = lsn
 	}
-	return nil
-}
-
-func (r *reader) Start() error {
-	r.opt.Logger.Info("starting reader for task %s", r.opt.Task.Name)
 	pluginArgs := []string{
 		fmt.Sprintf("publication_names '%s'", r.replication.publicationName),
 		"proto_version '1'",
@@ -149,7 +152,6 @@ func (r *reader) Start() error {
 	var loopError error
 	for {
 		now := time.Now()
-
 		if r.retries > 10 {
 			loopError = errors.New("reader stopped,because of too many fails")
 			goto end
@@ -189,6 +191,9 @@ end:
 func (r *reader) Stop() error {
 	r.cancel()
 	time.Sleep(1 * time.Second)
+	if r.conn != nil {
+		r.conn.Close()
+	}
 	return nil
 }
 
@@ -301,4 +306,8 @@ func (r *reader) LatestPosition() string {
 
 func (r *reader) CurrentPosition() string {
 	return r.latestLSN.String()
+}
+
+func (r *reader) Release() error {
+	return r.replication.Release()
 }
