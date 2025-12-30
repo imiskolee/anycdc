@@ -45,6 +45,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/panjf2000/ants/v2 v2.11.4 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pingcap/errors v0.11.5-0.20250318082626-8f80e5cb09ec // indirect
 	github.com/pingcap/log v1.1.1-0.20241212030209-7e3ff8601a2a // indirect

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/model"
+	"github.com/panjf2000/ants/v2"
 	"sync"
 	"time"
 )
@@ -107,9 +108,12 @@ type Task struct {
 	dumperRunning     bool
 	cdcRunning        bool
 	dumperWG          sync.WaitGroup
+	threadPool        *ants.Pool
+	tableErrors       sync.Map
 }
 
 func NewTask(id string) *Task {
+	p, _ := ants.NewPool(10)
 	return &Task{
 		ctx:    context.Background(),
 		id:     id,
@@ -118,6 +122,7 @@ func NewTask(id string) *Task {
 			metrics: make(map[string]taskLogState),
 			task:    &model.Task{Base: model.Base{ID: id}},
 		},
+		threadPool: p,
 	}
 }
 
@@ -333,19 +338,30 @@ func (s *Task) DumperEvent(sch *schemas.Table, records []EventRecord) error {
 	if len(records) < 1 {
 		return nil
 	}
-	if err := s.writer.ExecuteBatch(sch.Name, records); err != nil {
-		return err
+	err, ok := s.tableErrors.Load(sch.Name)
+	if ok && err != nil {
+		return err.(error)
 	}
-	for _, record := range records {
-		var e Event
-		e.Type = EventTypeInsert
-		e.SourceDatabase = s.state.Reader.Database
-		e.SourceTableName = sch.Name
-		e.Record = record
-		e.SourceSchema = sch
-		s.metric.add(&e)
+	return s.threadPool.Submit(s.runDumperEvent(sch, records))
+}
+
+func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() {
+	return func() {
+		if err := s.writer.ExecuteBatch(sch.Name, records); err != nil {
+			s.tableErrors.Store(sch.Name, err)
+			return
+		}
+		s.tableErrors.Delete(sch.Name)
+		for _, record := range records {
+			var e Event
+			e.Type = EventTypeInsert
+			e.SourceDatabase = s.state.Reader.Database
+			e.SourceTableName = sch.Name
+			e.Record = record
+			e.SourceSchema = sch
+			s.metric.add(&e)
+		}
 	}
-	return nil
 }
 
 func (s *Task) ReaderEvent(e Event) error {
@@ -440,6 +456,8 @@ func (s *Task) startDumperTask() error {
 		})()
 	}
 	s.dumperWG.Wait()
+	s.threadPool.Waiting()
+
 	return globalErr
 }
 
@@ -473,6 +491,13 @@ func (s *Task) startDumpTable(tableName string) error {
 	})()
 	if err = s.dumper.StartDumpTable(taskTable); err != nil {
 		return err
+	}
+	for {
+		if s.threadPool.Running() > 0 {
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		break
 	}
 	return nil
 }
