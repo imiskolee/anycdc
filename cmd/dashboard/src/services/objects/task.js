@@ -56,6 +56,11 @@ export default {
             placeholder : "table_1,table_2,table_3"
         },
         {
+            name : "thread_number",
+            type: "number",
+            placeholder: "max threads for this task,default as 5"
+        },
+        {
             name : "status",
         },
     ]

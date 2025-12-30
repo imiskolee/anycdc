@@ -113,7 +113,6 @@ type Task struct {
 }
 
 func NewTask(id string) *Task {
-	p, _ := ants.NewPool(10)
 	return &Task{
 		ctx:    context.Background(),
 		id:     id,
@@ -122,7 +121,6 @@ func NewTask(id string) *Task {
 			metrics: make(map[string]taskLogState),
 			task:    &model.Task{Base: model.Base{ID: id}},
 		},
-		threadPool: p,
 	}
 }
 
@@ -183,6 +181,16 @@ func (s *Task) Stop() error {
 }
 
 func (s *Task) startCDC() error {
+	maxNumber := s.state.Task.ThreadNumber
+	if maxNumber == 0 {
+		maxNumber = 5
+	}
+	p, _ := ants.NewPool(maxNumber)
+	s.threadPool = p
+	defer (func() {
+		s.threadPool.Release()
+		s.threadPool = nil
+	})()
 	s.cdcRunning = true
 	_ = s.state.Task.UpdateCDCStatus(model.CDCStatusRunning)
 	success := false
@@ -247,6 +255,16 @@ func (s *Task) stopCDC() error {
 
 func (s *Task) startDumper() error {
 	s.logger.Info("starting dumper")
+	maxNumber := s.state.Task.ThreadNumber
+	if maxNumber == 0 {
+		maxNumber = 5
+	}
+	p, _ := ants.NewPool(maxNumber)
+	s.threadPool = p
+	defer (func() {
+		s.threadPool.Release()
+		s.threadPool = nil
+	})()
 	defer (func() {
 		_ = s.Save()
 		s.dumperRunning = false
@@ -365,8 +383,23 @@ func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() 
 }
 
 func (s *Task) ReaderEvent(e Event) error {
-	s.metric.add(&e)
-	return s.writer.Execute(e)
+	err, ok := s.tableErrors.Load(e.SourceTableName)
+	if ok && err != nil {
+		return err.(error)
+	}
+	return s.threadPool.Submit(s.runTask(e))
+}
+
+func (s *Task) runTask(e Event) func() {
+	return func() {
+		s.metric.add(&e)
+		err := s.writer.Execute(e)
+		if err != nil {
+			s.tableErrors.Store(e.SourceTableName, err)
+		} else {
+			s.tableErrors.Delete(e.SourceTableName)
+		}
+	}
 }
 
 func (s *Task) Save() error {
