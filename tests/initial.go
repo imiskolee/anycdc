@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/model"
+	_ "github.com/imiskolee/anycdc/pkg/plugins/elasticsearch"
+	_ "github.com/imiskolee/anycdc/pkg/plugins/starrocks"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -46,6 +48,15 @@ var init_connectors = []model.Connector{
 		Password: "anycdc",
 		Database: "anycdc_test",
 	},
+	model.Connector{
+		Type:     "elasticsearch",
+		Name:     "test_es_1",
+		Host:     "127.0.0.1",
+		Port:     19200,
+		Username: "",
+		Password: "",
+		Database: "",
+	},
 }
 
 func upsert(connector model.Connector) {
@@ -57,6 +68,9 @@ func upsert(connector model.Connector) {
 }
 
 func initConnectors() {
+	model.DB().Exec("TRUNCATE TABLE connectors")
+	model.DB().Exec("TRUNCATE TABLE tasks")
+	model.DB().Exec("TRUNCATE TABLE task_tables")
 	for _, conn := range init_connectors {
 		upsert(conn)
 	}
@@ -83,6 +97,7 @@ admin:
 func initialModel() {
 	model.Init()
 	model.ApplyMigration()
+
 }
 
 func init() {

@@ -49,9 +49,13 @@ func Start() {
 	InitPlugins()
 	server.Static("/ui", "./static")
 	server.Use(CacheRequestBody())
+	if config.G.Admin.Auth.Username == "" || config.G.Admin.Auth.Password == "" {
+		panic("should provider basic auth username & password")
+	}
+	server.Use(gin.BasicAuth(gin.Accounts{
+		config.G.Admin.Auth.Username: config.G.Admin.Auth.Password,
+	}))
 	server.NoRoute(func(c *gin.Context) {
-		fmt.Println(c.Request.URL.String())
-		// 排除 API 请求（避免 API 路由被覆盖）
 		if c.Request.Method != "GET" {
 			c.Status(http.StatusMethodNotAllowed)
 			return

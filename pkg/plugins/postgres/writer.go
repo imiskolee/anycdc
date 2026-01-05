@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"github.com/imiskolee/anycdc/pkg/core"
+	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/plugins/common_sql"
 	"gorm.io/gorm"
 )
@@ -57,7 +58,8 @@ func (w *writer) Execute(e core.Event) error {
 	return nil
 }
 
-func (w *writer) ExecuteBatch(table string, records []core.EventRecord) error {
+func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.EventRecord) error {
+	table := sourceSchema.Name
 	sch := w.schemaManager.Get(w.opt.Connector.Database, table)
 	if len(sch.Columns) < 1 {
 		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", table)

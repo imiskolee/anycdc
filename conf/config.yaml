@@ -12,3 +12,6 @@ admin:
     username: root
     password: anycdc
     database: anycdc_test
+  auth:
+    username: anycdc
+    password: anycdc_test

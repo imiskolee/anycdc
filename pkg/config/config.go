@@ -24,9 +24,15 @@ type Database struct {
 	Database string `yaml:"database"`
 }
 
+type Auth struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
 type Admin struct {
 	Listen   string   `yaml:"listen"`
 	Database Database `yaml:"database"`
+	Auth     Auth     `yaml:"auth"`
 }
 
 type Config struct {

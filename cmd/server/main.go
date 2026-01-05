@@ -6,6 +6,7 @@ import (
 	"github.com/imiskolee/anycdc/cmd/server/runtime"
 	"github.com/imiskolee/anycdc/pkg/config"
 	"github.com/imiskolee/anycdc/pkg/model"
+	_ "github.com/imiskolee/anycdc/pkg/plugins/elasticsearch"
 	_ "github.com/imiskolee/anycdc/pkg/plugins/mysql"
 	_ "github.com/imiskolee/anycdc/pkg/plugins/postgres"
 	_ "github.com/imiskolee/anycdc/pkg/plugins/starrocks"

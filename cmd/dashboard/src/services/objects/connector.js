@@ -26,7 +26,7 @@ export default {
                 },
                 {
                     name : "ElasticSearch",
-                    value : "es",
+                    value : "elasticsearch",
                 }
             ]
         },

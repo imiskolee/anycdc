@@ -365,7 +365,7 @@ func (s *Task) DumperEvent(sch *schemas.Table, records []EventRecord) error {
 
 func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() {
 	return func() {
-		if err := s.writer.ExecuteBatch(sch.Name, records); err != nil {
+		if err := s.writer.ExecuteBatch(sch, records); err != nil {
 			s.tableErrors.Store(sch.Name, err)
 			return
 		}

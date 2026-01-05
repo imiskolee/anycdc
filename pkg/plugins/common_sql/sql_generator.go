@@ -192,7 +192,24 @@ func (s *SQLGenerator) toUpdate(e core.Event) (string, []interface{}, error) {
 }
 
 func (s *SQLGenerator) toDelete(e core.Event) (string, []interface{}, error) {
-	return "", nil, nil
+
+	var whereClauses []string
+	var values []interface{}
+
+	for _, col := range s.schema.GetPrimaryKeyNames() {
+		v, err := e.Record.FieldByName(col)
+		if err != nil {
+			return "", nil, err
+		}
+		whereClauses = append(whereClauses, fmt.Sprintf("%s = ?", s.quote(col)))
+		vv, err := s.typeMap.Decode(v.Value)
+		if err != nil {
+			return "", nil, err
+		}
+		values = append(values, vv)
+	}
+	sql := fmt.Sprintf("DELETE FROM %s WHERE %s", s.quote(e.SourceTableName), strings.Join(whereClauses, " AND "))
+	return sql, values, nil
 }
 
 type CreateTableFieldDescriptionBuilder func(col schemas.Column) string

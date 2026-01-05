@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  admin_db:
+    image: postgres:latest
+    container_name: admin-db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: anycdc
+      POSTGRES_DB: anycdc_test
+    ports:
+      - "15600:5432"
+    command: >
+      postgres 
+      -c wal_level=logical 
+      -c max_wal_senders=10 
+      -c max_replication_slots=10
+    restart: unless-stopped
+  postgres_1:
+    image: postgres:latest
+    container_name: postgres-db-1
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: anycdc
+      POSTGRES_DB: anycdc_test
+    ports:
+      - "15432:5432"
+    command: >
+      postgres 
+      -c wal_level=logical 
+      -c max_wal_senders=10 
+      -c max_replication_slots=10
+    restart: unless-stopped
+
+  postgres_2:
+    image: postgres:latest
+    container_name: postgres-db-2
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: anycdc
+      POSTGRES_DB: anycdc_test
+    ports:
+      - "15433:5432"
+    command: >
+      postgres 
+      -c wal_level=logical 
+      -c max_wal_senders=10 
+      -c max_replication_slots=10
+    restart: unless-stopped
+
+  mysql_1:
+    image: mysql:latest
+    container_name: mysql-db-1
+    environment:
+      MYSQL_ROOT_PASSWORD: anycdc
+      MYSQL_DATABASE: anycdc_test
+    ports:
+      - "23306:3306"
+    command: >
+      --server-id=1 
+      --log-bin=mysql-bin 
+      --binlog-format=ROW 
+      --binlog-row-image=FULL
+      --gtid_mode=ON
+    restart: unless-stopped
+
+  mysql_2:
+    image: mysql:latest
+    container_name: mysql-db-2
+    environment:
+      MYSQL_ROOT_PASSWORD: anycdc
+      MYSQL_DATABASE: anycdc_test
+    ports:
+      - "23307:3306"
+    command: >
+      --server-id=1 
+      --log-bin=mysql-bin 
+      --binlog-format=ROW 
+      --binlog-row-image=FULL
+      --gtid_mode=ON
+    restart: unless-stopped
+  starrocks_1:
+    image: starrocks/allin1-ubuntu:latest
+    container_name: sr-db-1
+    environment:
+      MYSQL_PWD: anycdc
+      MYSQL_DATABASE: anycdc_test
+    ports:
+      - "29030:9030"
+  es_1:
+    image: elasticsearch:8.14.0
+    container_name: es_1
+    ports:
+      - "19200:9200"
+    environment:
+      - discovery.type=single-node  # 声明单节点模式，必配
+      - xpack.security.enabled=false  # 关闭安全认证（测试用）
+      - xpack.security.enrollment.enabled=false
+      - ES_JAVA_OPTS=-Xms128m -Xmx1g
