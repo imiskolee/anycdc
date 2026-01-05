@@ -24,8 +24,7 @@ func Connect(connector *model.Connector) (*gorm.DB, error) {
 		return cachedDB, nil
 	}
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger:      logger.Default.LogMode(logger.Error),
-		PrepareStmt: false,
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 
 	if err != nil {
