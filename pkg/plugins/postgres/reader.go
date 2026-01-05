@@ -255,7 +255,9 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		oldData := newData
 		if logicalMsg.OldTuple != nil {
 			oldData, err = r.convertToEventRecord(&rel, logicalMsg.UpdateMessage.OldTuple.Columns)
-			return r.opt.Logger.Errorf("can not parse update message into event record %s", err)
+			if err != nil {
+				return r.opt.Logger.Errorf("can not parse update message into event record %s", err)
+			}
 		}
 		e.Type = core.EventTypeUpdate
 		e.SourceDatabase = r.opt.Connector.Database
