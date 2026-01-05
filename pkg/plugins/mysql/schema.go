@@ -45,9 +45,9 @@ func (s *schema) Get(dbname string, tableName string) *schemas.Table {
 		DataType         string `gorm:"column:data_type"`
 		ColumnType       string `gorm:"column:column_type"`
 		IsNullable       string `gorm:"column:is_nullable"`
-		ColumnLength     string `gorm:"column:column_length"`
-		NumericPrecision string `gorm:"column:numeric_precision"`
-		NumericScale     string `gorm:"column:numeric_scale"`
+		ColumnLength     int    `gorm:"column:column_length"`
+		NumericPrecision int    `gorm:"column:numeric_precision"`
+		NumericScale     int    `gorm:"column:numeric_scale"`
 	}
 	if err := conn.Raw(sql, dbname, tableName).Scan(&fields).Error; err != nil {
 		s.opt.Logger.Error("failed sync schema,err=%s", err)
@@ -63,12 +63,15 @@ func (s *schema) Get(dbname string, tableName string) *schemas.Table {
 		}
 		t, st := getBuiltType(field.DataType)
 		sch.Columns = append(sch.Columns, schemas.Column{
-			Name:         field.ColumnName,
-			Index:        field.Index - 1, //starting from 1 on data tables
-			IsPrimaryKey: isPri,
-			DataType:     t,
-			SecondlyType: st,
-			Nullable:     field.IsNullable == "YES",
+			Name:             field.ColumnName,
+			Index:            field.Index - 1, //starting from 1 on data tables
+			IsPrimaryKey:     isPri,
+			DataType:         t,
+			SecondlyType:     st,
+			Nullable:         field.IsNullable == "YES",
+			NumericPrecision: field.NumericPrecision,
+			NumericScale:     field.NumericScale,
+			ColumnLength:     field.ColumnLength,
 		})
 	}
 	return &sch

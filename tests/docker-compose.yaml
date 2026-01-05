@@ -83,7 +83,6 @@ services:
     image: starrocks/allin1-ubuntu:latest
     container_name: sr-db-1
     environment:
-      MYSQL_PWD: anycdc
       MYSQL_DATABASE: anycdc_test
     ports:
       - "29030:9030"

@@ -57,6 +57,15 @@ var init_connectors = []model.Connector{
 		Password: "",
 		Database: "",
 	},
+	model.Connector{
+		Type:     "starrocks",
+		Name:     "test_sr_1",
+		Host:     "127.0.0.1",
+		Port:     29030,
+		Username: "root",
+		Password: "",
+		Database: "anycdc_test",
+	},
 }
 
 func upsert(connector model.Connector) {

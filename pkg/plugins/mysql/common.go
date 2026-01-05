@@ -11,7 +11,7 @@ import (
 )
 
 func Connect(connector *model.Connector) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&multiStatements=true",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&multiStatements=true&interpolateParams=true&charset=utf8mb4",
 		connector.Username,
 		connector.Password,
 		connector.Host,

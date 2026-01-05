@@ -15,6 +15,11 @@
           <span v-if="!record.record.text.last_cdc_at">--</span>
         </a-tooltip>
       </template>
+
+      <template #tables="record,index,column">
+        <div style="max-width:200px">{{record.record.text.tables}}</div>
+      </template>
+
       <template #status="record,index,column">
         <a-tooltip trigger="hover" :title="'Status:' +record.record.text.status +  ' CDC Status:' + record.record.text.cdc_status">
           <div class="circle red" v-if="record.record.text.status === 'Active' && record.record.text.cdc_status === 'Failed'"></div>

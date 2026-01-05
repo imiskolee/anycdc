@@ -5,7 +5,7 @@ import (
 	"github.com/imiskolee/anycdc/pkg/core/types"
 )
 
-var typMap *types.Map = types.NewMap()
+var typMap *types.Map = types.NewDefaultTypeMap()
 
 func init() {
 	typMap.RegisterDecoder(schemas.TypeJSON, jsonDecode)
