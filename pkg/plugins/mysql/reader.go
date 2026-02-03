@@ -126,7 +126,7 @@ func (r *reader) Start() error {
 			goto end
 		default:
 		}
-		ctx, cancel := context.WithTimeout(r.ctx, 1*time.Second)
+		ctx, cancel := context.WithTimeout(r.ctx, 10*time.Second)
 		event, err := streamer.GetEvent(ctx)
 		cancel()
 		if errors.Is(err, context.DeadlineExceeded) {

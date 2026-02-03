@@ -167,7 +167,7 @@ func (r *reader) Start() error {
 				conn.Conn().PgConn(),
 				pglogrepl.StandbyStatusUpdate{WALWritePosition: r.latestLSN})
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		msg, err := conn.Conn().PgConn().ReceiveMessage(ctx)
 		cancel()
 		if err != nil {
