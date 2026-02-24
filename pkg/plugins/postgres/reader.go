@@ -166,6 +166,7 @@ func (r *reader) Start() error {
 			_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
 				conn.Conn().PgConn(),
 				pglogrepl.StandbyStatusUpdate{WALWritePosition: r.latestLSN})
+			r.lastHeartBeatAt = now
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		msg, err := conn.Conn().PgConn().ReceiveMessage(ctx)
