@@ -142,6 +142,9 @@ func (s *Task) Prepare() error {
 	s.state.Reader = readerConnector
 	s.state.Writer = writerConnector
 	s.tables = task.GetTables()
+	if task.DebugEnabled {
+		s.logger = NewFileLog(fmt.Sprintf("tasks/%s.log", task.ID), LevelDebug)
+	}
 	return nil
 }
 
