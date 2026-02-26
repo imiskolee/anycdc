@@ -17,7 +17,9 @@
       </template>
 
       <template #tables="record,index,column">
-        <div style="max-width:200px">{{record.record.text.tables}}</div>
+        <a-tooltip :title="record.record.text.tables">
+        <div style="max-width:200px">Tables: {{record.record.text.tables.length}}</div>
+        </a-tooltip>
       </template>
 
       <template #status="record,index,column">
@@ -232,7 +234,7 @@ function formatGoTimeToNowDuration(goTimeStr) {
 
   // 2. 计算与当前时间（Date.now()）的间隔（取绝对值，单位：秒）
   const now = Date.now(); // 固定使用当前时间戳对比
-  const diffSeconds = Math.abs(Math.floor((now - targetDate.getTime()) / 1000));
+  const diffSeconds = Math.abs(Math.floor((now - targetDate.getTime() + 3600*8) / 1000));
 
   // 3. 转换为时分秒的友好文本
   const hours = Math.floor(diffSeconds / 3600);

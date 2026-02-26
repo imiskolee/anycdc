@@ -49,12 +49,12 @@ func Start() {
 	InitPlugins()
 	server.Static("/ui", "./static")
 	server.Use(CacheRequestBody())
-	if config.G.Admin.Auth.Username == "" || config.G.Admin.Auth.Password == "" {
-		panic("should provider basic auth username & password")
+	if config.G.Admin.Auth.Username != "" && config.G.Admin.Auth.Password != "" {
+		server.Use(gin.BasicAuth(gin.Accounts{
+			config.G.Admin.Auth.Username: config.G.Admin.Auth.Password,
+		}))
 	}
-	server.Use(gin.BasicAuth(gin.Accounts{
-		config.G.Admin.Auth.Username: config.G.Admin.Auth.Password,
-	}))
+
 	server.NoRoute(func(c *gin.Context) {
 		if c.Request.Method != "GET" {
 			c.Status(http.StatusMethodNotAllowed)
