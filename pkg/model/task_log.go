@@ -43,7 +43,7 @@ type TaskTable struct {
 
 func GetOrCreateTaskTable(taskID string, table TableDefine) (*TaskTable, error) {
 	var task TaskTable
-	if err := DB().Where(`task_id = ? AND "table" = ?`, taskID, table).First(&task).Error; err == nil {
+	if err := DB().Where(`task_id = ? AND "table" = ?`, taskID, table.SourceTable).First(&task).Error; err == nil {
 		return &task, nil
 	}
 	task.ID = uuid.New().String()
@@ -63,7 +63,7 @@ func GetOrCreateTaskTable(taskID string, table TableDefine) (*TaskTable, error) 
 
 func GetTaskTableByName(taskID string, tableName string) (*TaskTable, error) {
 	var task TaskTable
-	if err := DB().Model(task).Where("task_id = ? AND name = ?", taskID, tableName).First(&task).Error; err != nil {
+	if err := DB().Model(task).Where("task_id = ? AND \"table\" = ?", taskID, tableName).First(&task).Error; err != nil {
 		return nil, err
 	}
 	return &task, nil

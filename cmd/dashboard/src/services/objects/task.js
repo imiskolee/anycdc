@@ -53,7 +53,8 @@ export default {
         {
             name : "tables",
             type: "string",
-            placeholder : "table_1,table_2,table_3"
+            placeholder : "table_1:table_1_alias,table_2,table_3",
+            hiddenOnList: true
         },
         {
             name : "thread_number",

@@ -15,6 +15,7 @@ type Runtime struct {
 }
 
 func (s *Runtime) Prepare() error {
+	core.SysLogger.Info("Starting Prepareing...")
 	var tasks []model.Task
 	if err := model.DB().Where("status = ?", model.TaskStatusActive).Find(&tasks).Error; err != nil {
 		return err
@@ -28,6 +29,7 @@ func (s *Runtime) Prepare() error {
 }
 
 func (s *Runtime) StartTask(id string) error {
+	core.SysLogger.Info("Starting task:%s", id)
 	if t, ok := s.Tasks[id]; ok {
 		_ = t.Stop()
 		time.Sleep(1 * time.Second)
@@ -48,6 +50,7 @@ func (s *Runtime) StartTask(id string) error {
 
 func (s *Runtime) StopTask(id string) error {
 	if t, ok := s.Tasks[id]; ok {
+		core.SysLogger.Info("Starting stop task:%s", id)
 		_ = t.Stop()
 		delete(s.Tasks, id)
 	}

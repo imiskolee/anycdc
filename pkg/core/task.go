@@ -176,8 +176,12 @@ func (s *Task) Stop() error {
 	if s.dumper != nil {
 		_ = s.stopDumper()
 	}
-	if s.reader != nil {
-		_ = s.stopCDC()
+	if s.cdcRunning == true {
+		if s.reader != nil {
+			_ = s.stopCDC()
+		}
+	} else {
+		_ = s.state.Task.UpdateCDCStatus(model.CDCStatusStopped)
 	}
 	return nil
 }
