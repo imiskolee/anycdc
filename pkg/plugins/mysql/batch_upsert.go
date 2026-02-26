@@ -51,7 +51,7 @@ func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.
 			strings.Join(updateClause, ","),
 		)
 	} else if connector.Type == model.ConnectorTypeStarRocks {
-		rawSQL = fmt.Sprintf("INSERT OVERWRITE `%s` (%s) VALUES (%s)",
+		rawSQL = fmt.Sprintf("INSERT OVERWRITE `%s` (%s) VALUES %s",
 			sch.Name,
 			strings.Join(columns, ","),
 			strings.Join(placeHolders, ","),
