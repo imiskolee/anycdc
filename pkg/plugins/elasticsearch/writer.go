@@ -58,7 +58,7 @@ func (s *writer) Execute(e core.Event) error {
 	if err != nil {
 		return err
 	}
-	resp, err := s.client.Index(e.SourceTableName, bytes.NewReader(jsonStr))
+	resp, err := s.client.Index(e.DestinationTableName, bytes.NewReader(jsonStr))
 	if err != nil {
 		return err
 	}
@@ -68,17 +68,18 @@ func (s *writer) Execute(e core.Event) error {
 	return nil
 }
 
-func (s *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.EventRecord) error {
+func (s *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event) error {
 	var buf bytes.Buffer
+
 	for _, record := range records {
-		r, err := s.convertObject(sourceSchema, record)
+		r, err := s.convertObject(sourceSchema, record.Record)
 		if err != nil {
 			return s.opt.Logger.Errorf("can not convert object: %s", err)
 		}
 		delete(r, "_id")
 		if err := json.NewEncoder(&buf).Encode(map[string]interface{}{
 			"create": map[string]interface{}{
-				"_index": sourceSchema.Name,
+				"_index": records[0].DestinationTableName,
 				"_id":    r["_id"],
 			},
 		}); err != nil {

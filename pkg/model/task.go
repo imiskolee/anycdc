@@ -10,6 +10,11 @@ type TaskMetric struct {
 	LastSyncPosition string
 }
 
+type TableDefine struct {
+	SourceTable      string
+	DestinationTable string
+}
+
 const (
 	TaskStatusActive   = "Active"
 	TaskStatusInactive = "Inactive"
@@ -65,8 +70,30 @@ func (s *Task) TableName() string {
 	return "tasks"
 }
 
-func (s *Task) GetTables() []string {
-	return strings.Split(s.Tables, ",")
+func (s *Task) GetTables() []TableDefine {
+	tables := strings.Split(s.Tables, ",")
+	var defines []TableDefine
+	for _, table := range tables {
+		table = strings.TrimSpace(table)
+		ts := strings.Split(table, ":")
+		source := ts[0]
+		destination := ts[0]
+		if len(ts) > 1 {
+			destination = ts[1]
+		}
+		defines = append(defines, TableDefine{
+			SourceTable:      source,
+			DestinationTable: destination,
+		})
+	}
+	return defines
+}
+
+func (s *Task) Preload() {
+	tables := s.GetTables()
+	for _, table := range tables {
+		_, _ = GetOrCreateTaskTable(s.ID, table)
+	}
 }
 
 func (s *Task) UpdateMetric(metric TaskMetric) error {

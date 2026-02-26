@@ -13,5 +13,5 @@ type WriterOption struct {
 type Writer interface {
 	Prepare() error
 	Execute(e Event) error
-	ExecuteBatch(sourceSchema *schemas.Table, records []EventRecord) error
+	ExecuteBatch(sourceSchema *schemas.Table, records []Event) error
 }

@@ -28,32 +28,42 @@ type TaskTableMetric struct {
 
 type TaskTable struct {
 	Base
-	TaskID        string    `gorm:"column:task_id;varchar(255)" json:"task_id"`
-	Schema        string    `gorm:"column:schema;varchar(255)" json:"schema"`
-	Table         string    `gorm:"column:table;varchar(255)" json:"table"`
-	LastDumperKey string    `gorm:"column:last_dumper_key;type:text" json:"last_dumper_key"`
-	DumperState   string    `gorm:"column:dumper_state;varchar(255)" json:"dumper_state"`
-	LastEventTime time.Time `gorm:"column:last_event_time" json:"last_event_time"`
-	TotalDumped   uint64    `gorm:"column:total_dumped;type:bigint;default:0" json:"total_dumped"`
-	TotalInserted uint64    `gorm:"column:total_inserted;type:bigint;default:0" json:"total_inserted"`
-	TotalUpdated  uint64    `gorm:"column:total_updated;type:bigint;default:0" json:"total_updated"`
-	TotalDeleted  uint64    `gorm:"column:total_deleted;type:bigint;default:0" json:"total_deleted"`
+	TaskID           string    `gorm:"column:task_id;varchar(255)" json:"task_id"`
+	Schema           string    `gorm:"column:schema;varchar(255)" json:"schema"`
+	Table            string    `gorm:"column:table;varchar(255)" json:"table"`
+	DestinationTable string    `gorm:"column:destination_table;varchar(255)" json:"destination_table"`
+	LastDumperKey    string    `gorm:"column:last_dumper_key;type:text" json:"last_dumper_key"`
+	DumperState      string    `gorm:"column:dumper_state;varchar(255)" json:"dumper_state"`
+	LastEventTime    time.Time `gorm:"column:last_event_time" json:"last_event_time"`
+	TotalDumped      uint64    `gorm:"column:total_dumped;type:bigint;default:0" json:"total_dumped"`
+	TotalInserted    uint64    `gorm:"column:total_inserted;type:bigint;default:0" json:"total_inserted"`
+	TotalUpdated     uint64    `gorm:"column:total_updated;type:bigint;default:0" json:"total_updated"`
+	TotalDeleted     uint64    `gorm:"column:total_deleted;type:bigint;default:0" json:"total_deleted"`
 }
 
-func GetOrCreateTaskTable(taskID string, table string) (*TaskTable, error) {
+func GetOrCreateTaskTable(taskID string, table TableDefine) (*TaskTable, error) {
 	var task TaskTable
 	if err := DB().Where(`task_id = ? AND "table" = ?`, taskID, table).First(&task).Error; err == nil {
 		return &task, nil
 	}
 	task.ID = uuid.New().String()
 	task.TaskID = taskID
-	task.Table = table
+	task.Table = table.SourceTable
+	task.DestinationTable = table.DestinationTable
 	task.TotalDumped = 0
 	task.TotalInserted = 0
 	task.TotalUpdated = 0
 	task.TotalDeleted = 0
 	task.DumperState = DumperStateInitialed
 	if err := DB().Create(&task).Error; err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
+func GetTaskTableByName(taskID string, tableName string) (*TaskTable, error) {
+	var task TaskTable
+	if err := DB().Model(task).Where("task_id = ? AND name = ?", taskID, tableName).First(&task).Error; err != nil {
 		return nil, err
 	}
 	return &task, nil

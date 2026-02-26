@@ -30,9 +30,9 @@ type metric struct {
 func (m *metric) add(e *Event) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	met := m.metrics[e.SourceTableName]
+	met := m.metrics[e.SourceSchema.Name]
 	if met.state == nil {
-		s, err := model.GetOrCreateTaskTable(m.task.ID, e.SourceTableName)
+		s, err := model.GetTaskTableByName(m.task.ID, e.SourceSchema.Name)
 		if err != nil {
 			return
 		}
@@ -63,7 +63,7 @@ func (m *metric) add(e *Event) {
 		}
 		met.data.LastSyncedKeys = &lastSyncRecord
 	}
-	m.metrics[e.SourceTableName] = met
+	m.metrics[e.SourceSchema.Name] = met
 
 }
 func (m *metric) flush(mode string) {
@@ -97,7 +97,7 @@ type State struct {
 type Task struct {
 	id                string
 	state             State
-	tables            []string
+	tables            []model.TableDefine
 	dumper            Dumper
 	reader            Reader
 	writer            Writer
@@ -137,16 +137,18 @@ func (s *Task) Prepare() error {
 	if err != nil {
 		return s.logger.Errorf("can not load writer connector %s, %s", task.Writer, err)
 	}
+	task.Preload()
 	s.state.Task = task
 	s.state.Reader = readerConnector
 	s.state.Writer = writerConnector
+	s.tables = task.GetTables()
 	return nil
 }
 
 func (s *Task) Start() error {
 	shouldDumper := false
 	if s.state.Task.DumperEnabled {
-		for _, table := range s.state.Task.GetTables() {
+		for _, table := range s.tables {
 			t, err := model.GetOrCreateTaskTable(s.state.Task.ID, table)
 			if err != nil {
 				continue
@@ -365,7 +367,16 @@ func (s *Task) DumperEvent(sch *schemas.Table, records []EventRecord) error {
 
 func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() {
 	return func() {
-		if err := s.writer.ExecuteBatch(sch, records); err != nil {
+		var events []Event
+		for _, r := range records {
+			events = append(events, Event{
+				Type:                 EventTypeInsert,
+				Record:               r,
+				SourceSchema:         sch,
+				DestinationTableName: s.getDestinationTable(sch.Name),
+			})
+		}
+		if err := s.writer.ExecuteBatch(sch, events); err != nil {
 			s.tableErrors.Store(sch.Name, err)
 			return
 		}
@@ -373,8 +384,7 @@ func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() 
 		for _, record := range records {
 			var e Event
 			e.Type = EventTypeInsert
-			e.SourceDatabase = s.state.Reader.Database
-			e.SourceTableName = sch.Name
+			e.DestinationTableName = s.getDestinationTable(sch.Name)
 			e.Record = record
 			e.SourceSchema = sch
 			s.metric.add(&e)
@@ -383,21 +393,23 @@ func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() 
 }
 
 func (s *Task) ReaderEvent(e Event) error {
-	err, ok := s.tableErrors.Load(e.SourceTableName)
+	err, ok := s.tableErrors.Load(e.SourceSchema.Name)
 	if ok && err != nil {
 		return err.(error)
 	}
+
 	return s.threadPool.Submit(s.runTask(e))
 }
 
 func (s *Task) runTask(e Event) func() {
 	return func() {
 		s.metric.add(&e)
+		e.DestinationTableName = s.getDestinationTable(e.DestinationTableName)
 		err := s.writer.Execute(e)
 		if err != nil {
-			s.tableErrors.Store(e.SourceTableName, err)
+			s.tableErrors.Store(e.SourceSchema.Name, err)
 		} else {
-			s.tableErrors.Delete(e.SourceTableName)
+			s.tableErrors.Delete(e.SourceSchema.Name)
 		}
 	}
 }
@@ -449,7 +461,7 @@ func (s *Task) migrateTables(readerPlugin *Plugin, writerPlugin *Plugin) error {
 		Logger:    s.logger,
 	})
 
-	for _, table := range s.state.Task.GetTables() {
+	for _, table := range s.tables {
 		if err := s.migrateTable(readerSchManager, writerSchManager, table); err != nil {
 			return err
 		}
@@ -457,25 +469,26 @@ func (s *Task) migrateTables(readerPlugin *Plugin, writerPlugin *Plugin) error {
 	return nil
 }
 
-func (s *Task) migrateTable(readerSchManager SchemaManager, writerSchManager SchemaManager, tableName string) error {
-	readerTableSchema := readerSchManager.Get(s.state.Reader.Database, tableName)
-	writerTableSchema := writerSchManager.Get(s.state.Writer.Database, tableName)
+func (s *Task) migrateTable(readerSchManager SchemaManager, writerSchManager SchemaManager, table model.TableDefine) error {
+	readerTableSchema := readerSchManager.Get(s.state.Reader.Database, table.SourceTable)
+	writerTableSchema := writerSchManager.Get(s.state.Writer.Database, table.DestinationTable)
 	if writerTableSchema != nil && len(writerTableSchema.Columns) > 0 {
-		s.logger.Info("skip migrate table %s, because of already exists on writer connection", tableName)
+		s.logger.Info("skip migrate table %s, because of already exists on writer connection", table.DestinationTable)
 		return nil
 	}
 	if len(readerTableSchema.GetPrimaryKeys()) < 1 {
-		return s.logger.Errorf("can not find primary key for table %s", tableName)
+		return s.logger.Errorf("can not find primary key for table %s", table.SourceTable)
 	}
+	readerTableSchema.Name = table.DestinationTable
 	if err := writerSchManager.CreateTable(readerTableSchema); err != nil {
-		return s.logger.Errorf("can not migrate table %s, %s", tableName, err)
+		return s.logger.Errorf("can not migrate table %s, %s", table.SourceTable, err)
 	}
-	s.logger.Info("success migrate table %s", tableName)
+	s.logger.Info("success migrate table %s", table.SourceTable)
 	return nil
 }
 
 func (s *Task) startDumperTask() error {
-	tables := s.state.Task.GetTables()
+	tables := s.tables
 	s.logger.Info("start dumper task on task %s, tables=%+v", s.state.Task.Name, tables)
 	var globalErr error
 	for _, table := range tables {
@@ -494,31 +507,31 @@ func (s *Task) startDumperTask() error {
 	return globalErr
 }
 
-func (s *Task) startDumpTable(tableName string) error {
+func (s *Task) startDumpTable(table model.TableDefine) error {
 	var err error
 	if s.dumper == nil {
 		return nil
 	}
-	s.logger.Info("starting dump table %s", tableName)
-	taskTable, err := model.GetOrCreateTaskTable(s.state.Task.ID, tableName)
+	s.logger.Info("starting dump table %s", table.SourceTable)
+	taskTable, err := model.GetOrCreateTaskTable(s.state.Task.ID, table)
 	if err != nil {
 		return err
 	}
 	if taskTable.DumperState == model.DumperStateCompleted {
-		s.logger.Info("skipped table %s, it's already completed", tableName)
+		s.logger.Info("skipped table %s, it's already completed", table.SourceTable)
 		return nil
 	}
 	if taskTable.DumperState == model.DumperStateFailed {
-		s.logger.Info("skipped table %s, please manual re-trigger dumper", tableName)
+		s.logger.Info("skipped table %s, please manual re-trigger dumper", table.SourceTable)
 		return nil
 	}
 	taskTable.UpdateDumperState(model.DumperStateRunning)
 	defer (func() {
 		if err != nil {
-			s.logger.Info("table %s dumper failed, %s", tableName, err.Error())
+			s.logger.Info("table %s dumper failed, %s", table.SourceTable, err.Error())
 			taskTable.UpdateDumperState(model.DumperStateFailed)
 		} else {
-			s.logger.Info("table %s dumper completed", tableName)
+			s.logger.Info("table %s dumper completed", table.SourceTable)
 			taskTable.UpdateDumperState(model.DumperStateCompleted)
 		}
 	})()
@@ -548,4 +561,13 @@ func (s *Task) Release() error {
 		return s.reader.Release()
 	}
 	return nil
+}
+
+func (s *Task) getDestinationTable(sourceTableName string) string {
+	for _, t := range s.tables {
+		if t.SourceTable == sourceTableName {
+			return t.DestinationTable
+		}
+	}
+	return sourceTableName
 }

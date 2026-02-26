@@ -32,15 +32,21 @@ type reader struct {
 	relations       map[uint32]pglogrepl.RelationMessageV2
 	lastHeartBeatAt time.Time
 	lastEventAt     *time.Time
+	schemaManager   core.SchemaManager
 }
 
 func newReader(ctx context.Context, opts interface{}) core.Reader {
 	c, cancel := context.WithCancel(ctx)
+	o := opts.(*core.ReaderOption)
 	reader := &reader{
 		ctx:       c,
 		cancel:    cancel,
-		opt:       opts.(*core.ReaderOption),
+		opt:       o,
 		relations: make(map[uint32]pglogrepl.RelationMessageV2),
+		schemaManager: core.NewCachedSchemaManager(newSchema(ctx, &core.SchemaOption{
+			Connector: o.Connector,
+			Logger:    o.Logger,
+		})),
 	}
 	return reader
 }
@@ -86,11 +92,15 @@ func (r *reader) Prepare() error {
 	if err != nil {
 		return r.opt.Logger.Errorf("can not prepare reader initial extra: %v", err)
 	}
+	var tables []string
+	for _, v := range r.opt.Task.GetTables() {
+		tables = append(tables, v.SourceTable)
+	}
 	r.replication = &replication{
 		conn:            conn,
 		publicationName: extra.PublicationName,
 		slotName:        extra.SlotName,
-		tables:          r.opt.Task.GetTables(),
+		tables:          tables,
 		logger:          r.opt.Logger,
 	}
 	return nil
@@ -244,8 +254,8 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		}
 		e.Record = record
 		e.Type = core.EventTypeInsert
-		e.SourceDatabase = r.opt.Connector.Database
-		e.SourceTableName = rel.RelationName
+		sch := r.schemaManager.Get(r.opt.Connector.Database, rel.RelationName)
+		e.SourceSchema = sch
 		break
 	case *pglogrepl.UpdateMessageV2:
 		rel := r.relations[logicalMsg.RelationID]
@@ -261,11 +271,11 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 			}
 		}
 		e.Type = core.EventTypeUpdate
-		e.SourceDatabase = r.opt.Connector.Database
-		e.SourceTableName = rel.RelationName
 		e.Record = newData
 		e.OldRecord = new(core.EventRecord)
 		*e.OldRecord = oldData
+		sch := r.schemaManager.Get(r.opt.Connector.Database, rel.RelationName)
+		e.SourceSchema = sch
 		break
 	case *pglogrepl.DeleteMessageV2:
 		rel := r.relations[logicalMsg.RelationID]
@@ -274,9 +284,9 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 			return r.opt.Logger.Errorf("can not parse delete message into event record %s", err)
 		}
 		e.Type = core.EventTypeDelete
-		e.SourceDatabase = r.opt.Connector.Database
-		e.SourceTableName = rel.RelationName
 		e.Record = oldData
+		sch := r.schemaManager.Get(r.opt.Connector.Database, rel.RelationName)
+		e.SourceSchema = sch
 		break
 	}
 	if e.Type != core.EventTypeUnknown {

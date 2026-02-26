@@ -36,9 +36,9 @@ func (w *writer) Prepare() error {
 }
 
 func (w *writer) Execute(e core.Event) error {
-	sch := w.schemaManager.Get(w.opt.Connector.Database, e.SourceTableName)
+	sch := w.schemaManager.Get(w.opt.Connector.Database, e.DestinationTableName)
 	if len(sch.Columns) < 1 {
-		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", e.SourceTableName)
+		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", e.DestinationTableName)
 		return nil
 	}
 	e.Record = e.Record.ConvertRecord(sch)
@@ -58,8 +58,8 @@ func (w *writer) Execute(e core.Event) error {
 	return nil
 }
 
-func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.EventRecord) error {
-	table := sourceSchema.Name
+func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event) error {
+	table := records[0].DestinationTableName
 	sch := w.schemaManager.Get(w.opt.Connector.Database, table)
 	if len(sch.Columns) < 1 {
 		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", table)
@@ -67,7 +67,7 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.EventR
 	}
 	convertedRecord := make([]core.EventRecord, len(records))
 	for i, record := range records {
-		convertedRecord[i] = record.ConvertRecord(sch)
+		convertedRecord[i] = record.Record.ConvertRecord(sch)
 	}
 	sql, params, err := batchUpsert(sch, dataTypes, convertedRecord)
 	if err != nil {

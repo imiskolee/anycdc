@@ -224,7 +224,7 @@ func (r *reader) handler(e *replication.BinlogEvent) error {
 		}
 		shouldRun := false
 		for _, v := range r.opt.Task.GetTables() {
-			if v == tableName {
+			if v.SourceTable == tableName {
 				shouldRun = true
 				break
 			}
@@ -238,9 +238,8 @@ func (r *reader) handler(e *replication.BinlogEvent) error {
 		for _, record := range records {
 			var ev core.Event
 			ev.Record = record
-			ev.SourceDatabase = dbName
-			ev.SourceTableName = tableName
 			ev.Record = record
+			ev.SourceSchema = table
 			if e.Header.EventType == replication.UPDATE_ROWS_EVENTv0 ||
 				e.Header.EventType == replication.UPDATE_ROWS_EVENTv1 ||
 				e.Header.EventType == replication.UPDATE_ROWS_EVENTv2 {

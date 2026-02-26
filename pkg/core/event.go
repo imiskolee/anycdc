@@ -64,10 +64,9 @@ type Field struct {
 }
 
 type Event struct {
-	Type            EventType
-	SourceDatabase  string
-	SourceTableName string
-	Record          EventRecord
-	OldRecord       *EventRecord //for update
-	SourceSchema    *schemas.Table
+	Type                 EventType
+	Record               EventRecord
+	OldRecord            *EventRecord //for update
+	SourceSchema         *schemas.Table
+	DestinationTableName string
 }

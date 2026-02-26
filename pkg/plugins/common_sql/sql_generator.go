@@ -208,7 +208,7 @@ func (s *SQLGenerator) toDelete(e core.Event) (string, []interface{}, error) {
 		}
 		values = append(values, vv)
 	}
-	sql := fmt.Sprintf("DELETE FROM %s WHERE %s", s.quote(e.SourceTableName), strings.Join(whereClauses, " AND "))
+	sql := fmt.Sprintf("DELETE FROM %s WHERE %s", s.quote(e.DestinationTableName), strings.Join(whereClauses, " AND "))
 	return sql, values, nil
 }
 
