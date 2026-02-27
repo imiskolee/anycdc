@@ -143,6 +143,7 @@ func (s *Task) Prepare() error {
 	s.state.Writer = writerConnector
 	s.tables = task.GetTables()
 	if task.DebugEnabled {
+		s.logger.Close()
 		s.logger = NewFileLog(fmt.Sprintf("tasks/%s.log", task.ID), LevelDebug)
 	}
 	return nil
@@ -184,7 +185,6 @@ func (s *Task) Stop() error {
 			_ = s.stopCDC()
 		}
 	}
-	_ = s.state.Task.UpdateCDCStatus(model.CDCStatusStopped)
 	return nil
 }
 

@@ -120,3 +120,7 @@ func (s *FileLogger) Rotate() {
 		_ = s.rawFile.Truncate(maxSize / 2)
 	}
 }
+
+func (s *FileLogger) Close() {
+	_ = s.rawFile.Close()
+}
