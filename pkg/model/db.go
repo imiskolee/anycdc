@@ -18,8 +18,13 @@ func connectPostgres(connector config.Database) (*gorm.DB, error) {
 		connector.Password,
 		connector.Database,
 	)
+
+	level := logger.Error
+	if config.G.LogLevel == "debug" {
+		level = logger.Info
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Error),
+		Logger: logger.Default.LogMode(level),
 	})
 	if err != nil {
 		return nil, err
