@@ -37,10 +37,14 @@ func Init() {
 	if err != nil {
 		panic("Can not connect admin database:" + err.Error())
 	}
+	if config.G.Tester {
+		db = db.Debug()
+	}
 	adminDB = db
 }
 
 func DB() *gorm.DB {
+
 	return adminDB
 }
 
