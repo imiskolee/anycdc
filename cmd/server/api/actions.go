@@ -95,18 +95,5 @@ func afterUpdateTask(c *gin.Context) error {
 	if err := model.DB().Where("id = ?", id).First(&m).Error; err != nil {
 		return err
 	}
-	tables := m.GetTables()
-	for _, table := range tables {
-		var taskTable model.TaskTable
-		if err := model.DB().Where(`task_id = ? AND "table" = ?`, id, table.SourceTable).First(&taskTable).Error; err != nil {
-			taskTable, err := model.GetOrCreateTaskTable(id, table)
-			if err == nil {
-				taskTable.DumperState = model.DumperStateCompleted
-			}
-			if err := model.DB().Save(&taskTable).Error; err != nil {
-				return nil
-			}
-		}
-	}
 	return nil
 }
