@@ -167,7 +167,7 @@ func (s *Task) Start() error {
 			return err
 		}
 	}
-	if s.state.Task.CDCEnabled && s.state.Task.CDCStatus != model.CDCStatusStopped {
+	if s.state.Task.CDCEnabled {
 		if err := s.startCDC(); err != nil {
 			return err
 		}
@@ -183,9 +183,8 @@ func (s *Task) Stop() error {
 		if s.reader != nil {
 			_ = s.stopCDC()
 		}
-	} else {
-		_ = s.state.Task.UpdateCDCStatus(model.CDCStatusStopped)
 	}
+	_ = s.state.Task.UpdateCDCStatus(model.CDCStatusStopped)
 	return nil
 }
 

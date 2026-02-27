@@ -29,6 +29,7 @@ func (s *Runtime) Prepare() error {
 }
 
 func (s *Runtime) StartTask(id string) error {
+
 	core.SysLogger.Info("Starting task:%s", id)
 	if t, ok := s.Tasks[id]; ok {
 		_ = t.Stop()

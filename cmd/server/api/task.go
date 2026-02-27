@@ -76,7 +76,6 @@ func StopTask(ctx *gin.Context) {
 		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("can not get task:%s", id).Error())
 		return
 	}
-
 	if err := runtime.R.StopTask(id); err != nil {
 		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())
 		return
