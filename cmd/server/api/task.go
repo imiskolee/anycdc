@@ -60,7 +60,6 @@ func StartTask(ctx *gin.Context) {
 		Error(ctx, http.StatusBadRequest, core.SysLogger.Errorf("can not get task:%s", id).Error())
 		return
 	}
-
 	_ = task.UpdateCDCStatus(model.CDCStatusRunning)
 	if err := runtime.R.StartTask(id); err != nil {
 		Error(ctx, http.StatusInternalServerError, core.SysLogger.Errorf("can not start task:%s", id).Error())

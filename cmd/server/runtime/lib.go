@@ -32,7 +32,7 @@ func (s *Runtime) StartTask(id string) error {
 	core.SysLogger.Info("Starting task:%s", id)
 	if t, ok := s.Tasks[id]; ok {
 		_ = t.Stop()
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 	t := core.NewTask(id)
 	if err := t.Prepare(); err != nil {
