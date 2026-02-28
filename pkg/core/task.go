@@ -67,7 +67,6 @@ func (m *metric) add(e *Event) {
 		tl.data.LastSyncedKeys = &lastSyncRecord
 	}
 	m.metrics.Store(e.SourceSchema.Name, tl)
-
 }
 func (m *metric) flush(mode string) {
 	m.mutex.Lock()

@@ -149,8 +149,8 @@ func (r *reader) Start() error {
 			break
 		}
 		r.retries = 0
-		if event.Header.EventType == replication.XID_EVENT {
-			r.latestPosition = r.syncer.GetNextPosition()
+		if event.Header.EventType == replication.QUERY_EVENT {
+			r.latestPosition.Pos = event.Header.LogPos
 			pt := time.Unix(int64(event.Header.Timestamp), 0)
 			r.lastEventAt = &pt
 		}
@@ -206,6 +206,7 @@ func (r *reader) CurrentPosition() core.ReaderPosition {
 
 func (r *reader) handler(e *replication.BinlogEvent) error {
 	switch e.Header.EventType {
+
 	case
 		replication.WRITE_ROWS_EVENTv0,
 		replication.WRITE_ROWS_EVENTv1,
