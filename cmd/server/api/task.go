@@ -140,6 +140,15 @@ func TaskTableResync(g *gin.Context) {
 		return
 	}
 	var taskTable model.TaskTable
+	var task model.Task
+	if err := model.DB().Where("id = ?", task.ID).Last(&task).Error; err != nil {
+		Error(g, http.StatusBadRequest, "can not get task")
+		return
+	}
+	if !task.DumperEnabled {
+		Error(g, http.StatusBadRequest, "dumper disabled")
+		return
+	}
 	if err := model.DB().Where("id = ?", id).Last(&taskTable).Error; err != nil {
 		Error(g, http.StatusBadRequest, "can not get task table")
 		return
