@@ -78,5 +78,6 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 	if err != nil {
 		return w.opt.Logger.Errorf("cannot execute: %v", err)
 	}
+	w.opt.Logger.Debug("Successfully executed batch SQL,records = %d", len(convertedRecord))
 	return nil
 }
