@@ -31,7 +31,7 @@ func (s *CachedSchemaManager) Get(dbName string, tableName string) *schemas.Tabl
 	key := fmt.Sprintf("%s.%s", dbName, tableName)
 	t, ok := s.tables.Load(key)
 	if ok {
-		tt := t.(*cachedSchema)
+		tt := t.(cachedSchema)
 		if now.Sub(tt.lastSyncAt) < 10*time.Minute {
 			return &tt.schema
 		}
