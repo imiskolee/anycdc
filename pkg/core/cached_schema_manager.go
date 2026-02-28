@@ -29,7 +29,6 @@ func (s *CachedSchemaManager) Get(dbName string, tableName string) *schemas.Tabl
 	defer s.mutex.Unlock()
 	now := time.Now()
 	key := fmt.Sprintf("%s.%s", dbName, tableName)
-
 	t, ok := s.tables.Load(key)
 	if ok {
 		tt := t.(*cachedSchema)

@@ -146,7 +146,7 @@ func (s *SQLGenerator) toInsert(e core.Event) (string, []interface{}, error) {
 		break
 	case model.ConnectorTypeStarRocks:
 		insertSQL = fmt.Sprintf(
-			"INSERT OVERWRITE %s (%s) VALUES (%s)",
+			"INSERT INTO %s (%s) VALUES (%s)",
 			s.quote(s.schema.Name),
 			strings.Join(columns, ", "),
 			strings.Join(quotes, ", "),
