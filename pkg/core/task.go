@@ -33,7 +33,6 @@ func (m *metric) add(e *Event) {
 	var tl taskLogState
 	met, ok := m.metrics.Load(e.SourceSchema.Name)
 	if !ok {
-		var tl taskLogState
 		s, err := model.GetTaskTableByName(m.task.ID, e.SourceSchema.Name)
 		if err != nil {
 			return
