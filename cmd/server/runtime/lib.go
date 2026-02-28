@@ -15,7 +15,6 @@ type Runtime struct {
 }
 
 func (s *Runtime) Prepare() error {
-	core.SysLogger.Info("Starting Prepareing...")
 	var tasks []model.Task
 	if err := model.DB().Where("status = ?", model.TaskStatusActive).Find(&tasks).Error; err != nil {
 		return err

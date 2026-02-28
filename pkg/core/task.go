@@ -113,10 +113,17 @@ type Task struct {
 }
 
 func NewTask(id string) *Task {
+	level := LevelInfo
+	task, _ := model.GetTaskByID(id)
+	if task != nil {
+		if task.DebugEnabled {
+			level = LevelDebug
+		}
+	}
 	return &Task{
 		ctx:    context.Background(),
 		id:     id,
-		logger: NewFileLog(fmt.Sprintf("tasks/%s.log", id), LevelInfo),
+		logger: NewFileLog(fmt.Sprintf("tasks/%s.log", id), level),
 		metric: metric{
 			metrics: make(map[string]taskLogState),
 			task:    &model.Task{Base: model.Base{ID: id}},
@@ -142,10 +149,6 @@ func (s *Task) Prepare() error {
 	s.state.Reader = readerConnector
 	s.state.Writer = writerConnector
 	s.tables = task.GetTables()
-	if task.DebugEnabled {
-		s.logger.Close()
-		s.logger = NewFileLog(fmt.Sprintf("tasks/%s.log", task.ID), LevelDebug)
-	}
 	return nil
 }
 
