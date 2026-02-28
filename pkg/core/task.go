@@ -22,7 +22,7 @@ type taskLogState struct {
 }
 
 type metric struct {
-	metrics map[string]taskLogState
+	metrics sync.Map
 	mutex   sync.Mutex
 	task    *model.Task
 }
@@ -30,23 +30,27 @@ type metric struct {
 func (m *metric) add(e *Event) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	met := m.metrics[e.SourceSchema.Name]
-	if met.state == nil {
+	var tl taskLogState
+	met, ok := m.metrics.Load(e.SourceSchema.Name)
+	if !ok {
+		var tl taskLogState
 		s, err := model.GetTaskTableByName(m.task.ID, e.SourceSchema.Name)
 		if err != nil {
 			return
 		}
-		met.state = s
+		tl.state = s
+	} else {
+		tl = met.(taskLogState)
 	}
 	switch e.Type {
 	case EventTypeInsert:
-		met.data.Inserted += 1
+		tl.data.Inserted += 1
 		break
 	case EventTypeUpdate:
-		met.data.Updated += 1
+		tl.data.Updated += 1
 		break
 	case EventTypeDelete:
-		met.data.Deleted += 1
+		tl.data.Deleted += 1
 		break
 	default:
 	}
@@ -61,21 +65,23 @@ func (m *metric) add(e *Event) {
 			}
 			lastSyncRecord[pk] = val.Value.V
 		}
-		met.data.LastSyncedKeys = &lastSyncRecord
+		tl.data.LastSyncedKeys = &lastSyncRecord
 	}
-	m.metrics[e.SourceSchema.Name] = met
+	m.metrics.Store(e.SourceSchema.Name, tl)
 
 }
 func (m *metric) flush(mode string) {
 	m.mutex.Lock()
 	ms := make(map[string]taskLogState)
-	for k, v := range m.metrics {
-		ms[k] = v
-	}
+
+	m.metrics.Range(func(key, value interface{}) bool {
+		ms[key.(string)] = value.(taskLogState)
+		return true
+	})
 	for k, _ := range ms {
-		d := m.metrics[k]
+		d := ms[k]
 		d.data = model.TaskTableMetric{}
-		m.metrics[k] = d
+		m.metrics.Store(k, d)
 	}
 	m.mutex.Unlock()
 	for _, met := range ms {
@@ -125,8 +131,7 @@ func NewTask(id string) *Task {
 		id:     id,
 		logger: NewFileLog(fmt.Sprintf("tasks/%s.log", id), level),
 		metric: metric{
-			metrics: make(map[string]taskLogState),
-			task:    &model.Task{Base: model.Base{ID: id}},
+			task: &model.Task{Base: model.Base{ID: id}},
 		},
 	}
 }
@@ -560,9 +565,11 @@ func (s *Task) startDumpTable(table model.TableDefine) error {
 func (s *Task) summary() {
 	s.logger.Info("Task Summary Report:")
 	s.logger.Info("  CDC Position:%s", s.state.Task.LastCDCPosition)
-	for _, m := range s.metric.metrics {
+	s.metric.metrics.Range(func(k, v interface{}) bool {
+		m := v.(taskLogState)
 		s.logger.Info("  table %s I=%d, U=%d, D=%d", m.state.Table, m.data.Inserted, m.data.Updated, m.data.Deleted)
-	}
+		return true
+	})
 }
 
 func (s *Task) Release() error {
