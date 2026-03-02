@@ -26,7 +26,7 @@ func (s *schema) Get(dbname string, tableName string) *schemas.Table {
 	}
 
 	sql := `SELECT 
- 	COLUMN_KEY column_key,
+ 		COLUMN_KEY column_key,
         ordinal_position idx,
         IS_NULLABLE is_nullable,
   		COLUMN_NAME column_name,
@@ -36,7 +36,7 @@ func (s *schema) Get(dbname string, tableName string) *schemas.Table {
   		NUMERIC_PRECISION numeric_precision,
   		NUMERIC_SCALE numeric_scale
   		FROM information_schema.COLUMNS
-		WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`
+		WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ordinal_position asc LIMIT 1000`
 
 	var fields []struct {
 		ColumnKey        string `gorm:"column:column_key"`
@@ -74,6 +74,7 @@ func (s *schema) Get(dbname string, tableName string) *schemas.Table {
 			ColumnLength:     field.ColumnLength,
 		})
 	}
+
 	return &sch
 }
 

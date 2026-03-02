@@ -142,6 +142,7 @@ func (r *reader) Start() error {
 			time.Sleep(time.Duration(r.retries) * time.Second)
 			continue
 		}
+		r.opt.Logger.Debug("reader event: %+v", event.Header.EventType)
 		if err := r.handler(event); err != nil {
 			r.retries++
 			r.opt.Logger.Error("failed to handle event,%s", err.Error())
@@ -150,7 +151,7 @@ func (r *reader) Start() error {
 		}
 		r.retries = 0
 		if event.Header.EventType == replication.QUERY_EVENT {
-			r.latestPosition.Pos = event.Header.LogPos
+			//	r.latestPosition.Pos = event.Header.LogPos
 			pt := time.Unix(int64(event.Header.Timestamp), 0)
 			r.lastEventAt = &pt
 		}
@@ -233,14 +234,13 @@ func (r *reader) handler(e *replication.BinlogEvent) error {
 		if !shouldRun {
 			return nil
 		}
-
 		table := r.schemaManager.Get(string(rowsEvent.Table.Schema), string(rowsEvent.Table.Table))
 		records := r.rowsToEntry(table, rowsEvent)
 		for _, record := range records {
 			var ev core.Event
 			ev.Record = record
 			ev.Record = record
-			ev.SourceSchema = table
+			ev.SourceSchema = *table
 			if e.Header.EventType == replication.UPDATE_ROWS_EVENTv0 ||
 				e.Header.EventType == replication.UPDATE_ROWS_EVENTv1 ||
 				e.Header.EventType == replication.UPDATE_ROWS_EVENTv2 {

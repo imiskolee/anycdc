@@ -67,6 +67,6 @@ type Event struct {
 	Type                 EventType
 	Record               EventRecord
 	OldRecord            *EventRecord //for update
-	SourceSchema         *schemas.Table
+	SourceSchema         schemas.Table
 	DestinationTableName string
 }

@@ -255,7 +255,7 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		e.Record = record
 		e.Type = core.EventTypeInsert
 		sch := r.schemaManager.Get(r.opt.Connector.Database, rel.RelationName)
-		e.SourceSchema = sch
+		e.SourceSchema = *sch
 		break
 	case *pglogrepl.UpdateMessageV2:
 		rel := r.relations[logicalMsg.RelationID]
@@ -275,7 +275,7 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		e.OldRecord = new(core.EventRecord)
 		*e.OldRecord = oldData
 		sch := r.schemaManager.Get(r.opt.Connector.Database, rel.RelationName)
-		e.SourceSchema = sch
+		e.SourceSchema = *sch
 		break
 	case *pglogrepl.DeleteMessageV2:
 		rel := r.relations[logicalMsg.RelationID]
@@ -286,7 +286,7 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		e.Type = core.EventTypeDelete
 		e.Record = oldData
 		sch := r.schemaManager.Get(r.opt.Connector.Database, rel.RelationName)
-		e.SourceSchema = sch
+		e.SourceSchema = *sch
 		break
 	}
 	if e.Type != core.EventTypeUnknown {

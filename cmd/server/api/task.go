@@ -140,8 +140,12 @@ func TaskTableResync(g *gin.Context) {
 		return
 	}
 	var taskTable model.TaskTable
+	if err := model.DB().Where("id = ?", id).Last(&taskTable).Error; err != nil {
+		Error(g, http.StatusBadRequest, "can not get task table")
+		return
+	}
 	var task model.Task
-	if err := model.DB().Where("id = ?", task.ID).Last(&task).Error; err != nil {
+	if err := model.DB().Where("id = ?", taskTable.TaskID).Last(&task).Error; err != nil {
 		Error(g, http.StatusBadRequest, "can not get task")
 		return
 	}
@@ -149,14 +153,11 @@ func TaskTableResync(g *gin.Context) {
 		Error(g, http.StatusBadRequest, "dumper disabled")
 		return
 	}
-	if err := model.DB().Where("id = ?", id).Last(&taskTable).Error; err != nil {
-		Error(g, http.StatusBadRequest, "can not get task table")
-		return
-	}
 	if err := runtime.R.StopTask(taskTable.TaskID); err != nil {
 		Error(g, http.StatusBadRequest, "can not stop task "+err.Error())
 		return
 	}
+
 	if err := model.DB().Table(taskTable.TableName()).Where("id=?", taskTable.ID).Updates(map[string]interface{}{
 		"dumper_state":    model.DumperStateInitialed,
 		"total_dumped":    0,

@@ -50,7 +50,7 @@ func (s *writer) Prepare() error {
 }
 
 func (s *writer) Execute(e core.Event) error {
-	record, err := s.convertObject(e.SourceSchema, e.Record)
+	record, err := s.convertObject(&e.SourceSchema, e.Record)
 	if err != nil {
 		return s.opt.Logger.Errorf("can not convert object:%s", err)
 	}

@@ -54,7 +54,7 @@ func (m *metric) add(e *Event) {
 	default:
 	}
 
-	if e.SourceSchema != nil {
+	if e.SourceSchema.Name != "" {
 		pks := e.SourceSchema.GetPrimaryKeyNames()
 		lastSyncRecord := make(map[string]interface{})
 		for _, pk := range pks {
@@ -384,7 +384,7 @@ func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() 
 			events = append(events, Event{
 				Type:                 EventTypeInsert,
 				Record:               r,
-				SourceSchema:         sch,
+				SourceSchema:         *sch,
 				DestinationTableName: s.getDestinationTable(sch.Name),
 			})
 		}
@@ -398,7 +398,7 @@ func (s *Task) runDumperEvent(sch *schemas.Table, records []EventRecord) func() 
 			e.Type = EventTypeInsert
 			e.DestinationTableName = s.getDestinationTable(sch.Name)
 			e.Record = record
-			e.SourceSchema = sch
+			e.SourceSchema = *sch
 			s.metric.add(&e)
 		}
 	}
@@ -416,7 +416,7 @@ func (s *Task) ReaderEvent(e Event) error {
 func (s *Task) runTask(e Event) func() {
 	return func() {
 		s.metric.add(&e)
-		e.DestinationTableName = s.getDestinationTable(e.DestinationTableName)
+		e.DestinationTableName = s.getDestinationTable(e.SourceSchema.Name)
 		err := s.writer.Execute(e)
 		if err != nil {
 			s.tableErrors.Store(e.SourceSchema.Name, err)

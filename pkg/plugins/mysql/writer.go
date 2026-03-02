@@ -4,20 +4,24 @@ import (
 	"context"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/imiskolee/anycdc/pkg/core/schemas"
+	"github.com/imiskolee/anycdc/pkg/model"
 	"github.com/imiskolee/anycdc/pkg/plugins/common_sql"
 	"gorm.io/gorm"
+	"time"
 )
 
 type writer struct {
 	opt           *core.WriterOption
 	conn          *gorm.DB
 	schemaManager core.SchemaManager
+	Pipeline      *core.Pipeline
 }
 
 func NewWriter(ctx context.Context, opt interface{}) core.Writer {
 	o := opt.(*core.WriterOption)
 	return &writer{
-		opt: o,
+		opt:      o,
+		Pipeline: core.NewPipeline(),
 		schemaManager: core.NewCachedSchemaManager(NewSchema(context.Background(), &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
@@ -40,6 +44,14 @@ func (w *writer) Execute(e core.Event) error {
 	sch := w.schemaManager.Get(w.opt.Connector.Database, e.DestinationTableName)
 	if len(sch.Columns) < 1 {
 		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", e.DestinationTableName)
+		return nil
+	}
+
+	if e.Type != core.EventTypeDelete && w.opt.Connector.Type == model.ConnectorTypeStarRocks {
+		w.appendBatch(e)
+		if time.Now().Sub(w.Pipeline.CreatedAt) > 30*time.Second || w.Pipeline.Count > 1000 {
+			return w.processBatch()
+		}
 		return nil
 	}
 	e.Record = e.Record.ConvertRecord(sch)
@@ -66,18 +78,38 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", tableName)
 		return nil
 	}
+
 	convertedRecord := make([]core.EventRecord, len(records))
 	for i, record := range records {
 		convertedRecord[i] = record.Record.ConvertRecord(sch)
 	}
+
 	sql, params, err := batchUpsert(w.opt.Connector, sch, dataTypes, convertedRecord)
 	if err != nil {
 		return w.opt.Logger.Errorf("cannot generate batch SQL: %v", err)
 	}
 	err = w.conn.Exec(sql, params...).Error
 	if err != nil {
-		return w.opt.Logger.Errorf("cannot execute: %v", err)
+		return w.opt.Logger.Errorf("cannot execute: %v, sql=%s,vals=%+v", err, sql, params)
 	}
 	w.opt.Logger.Debug("Successfully executed batch SQL,records = %d", len(convertedRecord))
 	return nil
+}
+
+func (w *writer) processBatch() error {
+	w.opt.Logger.Debug("Starting processBatch:%d", w.Pipeline.Count)
+	pipeline := w.Pipeline
+	w.Pipeline = core.NewPipeline()
+	for table, batch := range pipeline.Events {
+		w.opt.Logger.Debug("Starting processBatch:%s %d", table, len(batch))
+		if err := w.ExecuteBatch(&batch[0].SourceSchema, batch); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (w *writer) appendBatch(event core.Event) {
+	w.Pipeline.Append("", event)
 }

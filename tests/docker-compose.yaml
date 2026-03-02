@@ -62,6 +62,7 @@ services:
       --binlog-format=ROW 
       --binlog-row-image=FULL
       --gtid_mode=ON
+      --max_allowed_packet=1073741824
     restart: unless-stopped
 
   mysql_2:
@@ -73,11 +74,12 @@ services:
     ports:
       - "23307:3306"
     command: >
-      --server-id=1 
+      --server-id=1
       --log-bin=mysql-bin 
       --binlog-format=ROW 
       --binlog-row-image=FULL
       --gtid_mode=ON
+      --max_allowed_packet=1073741824
     restart: unless-stopped
   starrocks_1:
     image: starrocks/allin1-ubuntu:latest

@@ -12,12 +12,11 @@ import (
 func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.Map, records []core.EventRecord) (string, []interface{}, error) {
 	primaryKeys := sch.GetPrimaryKeyNames()
 	record := records[0]
-	columns := make([]string, 0, len(record.Columns))
+	columns := make([]string, 0, len(sch.Columns))
 	values := make([]interface{}, 0, len(columns)*len(records))
 	placeHolders := make([]string, 0, len(records))
 	updateClause := make([]string, 0, len(record.Columns)-len(primaryKeys))
-
-	for _, col := range record.Columns {
+	for _, col := range sch.Columns {
 		columns = append(columns, fmt.Sprintf("`%s`", col.Name))
 		isPk := false
 		for _, primaryKey := range primaryKeys {
@@ -32,10 +31,16 @@ func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.
 	}
 	for _, record := range records {
 		var rowPlaceHolders []string
-		for _, column := range record.Columns {
-			val, err := typeMap.Decode(column.Value)
-			if err != nil {
-				return "", nil, err
+		for _, column := range sch.Columns {
+			field, err := record.FieldByName(column.Name)
+			var val interface{}
+			if err == nil {
+				val, err = typeMap.Decode(field.Value)
+				if err != nil {
+					return "", nil, err
+				}
+			} else {
+				val = nil
 			}
 			rowPlaceHolders = append(rowPlaceHolders, "?")
 			values = append(values, val)
