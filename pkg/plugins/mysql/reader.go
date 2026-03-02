@@ -79,15 +79,16 @@ func (r *reader) Prepare() error {
 		return r.opt.Logger.Errorf("can not prepare reader initial extra: %v", err)
 	}
 	r.binlogCfg = replication.BinlogSyncerConfig{
-		Host:                 r.opt.Connector.Host,
-		Port:                 uint16(r.opt.Connector.Port),
-		User:                 r.opt.Connector.Username,
-		Password:             r.opt.Connector.Password,
-		Charset:              "utf8mb4",
-		ServerID:             uint32(extra.ServerID), // 伪从库 ID（必须唯一，不能与主库/其他从库重复）
-		Flavor:               "mariadb",              // 数据库类型（mysql/mariadb）
-		ParseTime:            true,
-		UseDecimal:           true,
+		Host:       r.opt.Connector.Host,
+		Port:       uint16(r.opt.Connector.Port),
+		User:       r.opt.Connector.Username,
+		Password:   r.opt.Connector.Password,
+		Charset:    "utf8mb4",
+		ServerID:   uint32(extra.ServerID), // 伪从库 ID（必须唯一，不能与主库/其他从库重复）
+		Flavor:     "mariadb",              // 数据库类型（mysql/mariadb）
+		ParseTime:  true,
+		UseDecimal: true,
+
 		MaxReconnectAttempts: 100,
 		HeartbeatPeriod:      60 * time.Second,
 	}
@@ -150,8 +151,8 @@ func (r *reader) Start() error {
 			break
 		}
 		r.retries = 0
-		if event.Header.EventType == replication.QUERY_EVENT {
-			//	r.latestPosition.Pos = event.Header.LogPos
+		if event.Header.EventType == replication.XID_EVENT {
+			r.latestPosition = r.syncer.GetNextPosition()
 			pt := time.Unix(int64(event.Header.Timestamp), 0)
 			r.lastEventAt = &pt
 		}
@@ -207,7 +208,6 @@ func (r *reader) CurrentPosition() core.ReaderPosition {
 
 func (r *reader) handler(e *replication.BinlogEvent) error {
 	switch e.Header.EventType {
-
 	case
 		replication.WRITE_ROWS_EVENTv0,
 		replication.WRITE_ROWS_EVENTv1,
