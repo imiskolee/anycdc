@@ -30,6 +30,17 @@ func (r *replication) getLatestPosition() (pglogrepl.LSN, error) {
 	return currentLSN, err
 }
 
+func (r *replication) GetServerLatestPosition() (pglogrepl.LSN, error) {
+	var currentLSN pglogrepl.LSN
+	query := `SELECT pg_current_wal_lsn();`
+	row := r.conn.QueryRow(context.Background(), query)
+	err := row.Scan(&currentLSN)
+	if err != nil {
+		r.logger.Error("Failed to get latest LSN: %s", err)
+	}
+	return currentLSN, err
+}
+
 func (r *replication) getTableDiff(currentTables, desiredTables []string) (toAdd, toRemove []string) {
 	currentMap := make(map[string]bool)
 	for _, t := range currentTables {
