@@ -162,11 +162,6 @@ func (r *reader) Start() error {
 	})()
 	var loopError error
 
-	go (func() {
-		time.Sleep(5 * time.Second)
-		conn.Conn().PgConn().Close(context.Background())
-	})()
-
 	for {
 		now := time.Now()
 		if r.retries > 10 {
