@@ -264,6 +264,7 @@ func (s *Task) startCDC() error {
 func (s *Task) stopCDC() error {
 	_ = s.Save()
 	err := s.reader.Stop()
+	_ = s.state.Task.UpdateCDCStatus(model.CDCStatusStopped)
 	return err
 }
 
