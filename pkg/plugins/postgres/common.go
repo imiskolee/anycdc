@@ -52,8 +52,7 @@ func connectPGX(connector *model.Connector) (*pgxpool.Pool, error) {
 	config.ConnConfig.TLSConfig = nil
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 	config.MaxConns = 100
-	config.MaxConnIdleTime = 360 * time.Second
-
+	config.MaxConnIdleTime = 120 * time.Second
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, err

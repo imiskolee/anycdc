@@ -138,6 +138,7 @@ func (r *reader) Start() error {
 	if err != nil {
 		return r.opt.Logger.Errorf("can not start reader for task %s: %v", r.opt.Task.Name, err)
 	}
+	defer conn.Release()
 	err = pglogrepl.StartReplication(
 		r.ctx,
 		conn.Conn().PgConn(),
@@ -158,9 +159,14 @@ func (r *reader) Start() error {
 			return
 		}
 		r.opt.Logger.Info("stopped replication")
-		r.conn = nil
 	})()
 	var loopError error
+
+	go (func() {
+		time.Sleep(5 * time.Second)
+		conn.Conn().PgConn().Close(context.Background())
+	})()
+
 	for {
 		now := time.Now()
 		if r.retries > 10 {
@@ -172,7 +178,7 @@ func (r *reader) Start() error {
 			goto end
 		default:
 		}
-		if now.Sub(r.lastHeartBeatAt) > 60*time.Second {
+		if now.Sub(r.lastHeartBeatAt) > 30*time.Second {
 			latestLSN, err := r.replication.getLatestPosition()
 			if err != nil {
 				latestLSN = r.latestLSN
@@ -185,7 +191,7 @@ func (r *reader) Start() error {
 				})
 			r.lastHeartBeatAt = now
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		msg, err := conn.Conn().PgConn().ReceiveMessage(ctx)
 		cancel()
 		if err != nil {
@@ -208,11 +214,14 @@ end:
 }
 
 func (r *reader) Stop() error {
+	if r.conn != nil {
+		r.conn.Reset()
+		r.conn.Close()
+		r.conn = nil
+	}
 	r.cancel()
 	time.Sleep(1 * time.Second)
-	if r.conn != nil {
-		r.conn.Close()
-	}
+
 	return nil
 }
 
