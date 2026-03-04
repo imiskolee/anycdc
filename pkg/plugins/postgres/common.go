@@ -51,8 +51,8 @@ func connectPGX(connector *model.Connector) (*pgxpool.Pool, error) {
 	config.ConnConfig.RuntimeParams["replication"] = "database"
 	config.ConnConfig.TLSConfig = nil
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
-	config.MaxConns = 10
-	config.MaxConnIdleTime = 10 * time.Second
+	config.MaxConns = 3
+	config.MaxConnIdleTime = 5 * time.Second
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, err

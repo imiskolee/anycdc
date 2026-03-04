@@ -174,7 +174,7 @@ func (r *reader) Start() error {
 		default:
 		}
 		if now.Sub(r.lastHeartBeatAt) > 30*time.Second {
-			latestLSN, err := r.replication.GetServerLatestPosition()
+			latestLSN, err := r.replication.GetServerLatestPosition(conn.Conn())
 			if err != nil {
 				latestLSN = r.latestLSN
 			}
