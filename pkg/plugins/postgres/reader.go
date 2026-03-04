@@ -174,9 +174,12 @@ func (r *reader) Start() error {
 		default:
 		}
 		if now.Sub(r.lastHeartBeatAt) > 30*time.Second {
-			latestLSN, err := r.replication.GetServerLatestPosition()
-			if err != nil {
-				latestLSN = r.latestLSN
+			latestLSN := r.latestLSN
+			if r.lastEventAt != nil && r.lastEventAt.Sub(time.Now()) > 360*time.Second {
+				lsn, err := r.replication.GetServerLatestPosition()
+				if err == nil {
+					latestLSN = lsn
+				}
 			}
 			_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
 				conn.PgConn(),
@@ -186,6 +189,7 @@ func (r *reader) Start() error {
 				})
 			r.lastHeartBeatAt = now
 		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		msg, err := conn.PgConn().ReceiveMessage(ctx)
 		cancel()
