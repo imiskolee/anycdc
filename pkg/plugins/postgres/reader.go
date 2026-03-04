@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgxpool"
 	uuid "github.com/satori/go.uuid"
+	"log"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -161,7 +163,6 @@ func (r *reader) Start() error {
 		r.opt.Logger.Info("stopped replication")
 	})()
 	var loopError error
-
 	for {
 		now := time.Now()
 		if r.retries > 10 {
@@ -173,25 +174,20 @@ func (r *reader) Start() error {
 			goto end
 		default:
 		}
-		if now.Sub(r.lastHeartBeatAt) > 30*time.Second {
+		if time.Now().Sub(r.lastHeartBeatAt) > 30*time.Second {
 			latestLSN := r.latestLSN
-			if r.lastEventAt != nil && r.lastEventAt.Sub(time.Now()) > 360*time.Second {
-				lsn, err := r.replication.GetServerLatestPosition()
-				if err == nil {
-					latestLSN = lsn
-				}
-			}
 			_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
 				conn.PgConn(),
-				pglogrepl.StandbyStatusUpdate{WALWritePosition: latestLSN,
-					ReplyRequested: false,
-					ClientTime:     time.Now(),
+				pglogrepl.StandbyStatusUpdate{
+					WALWritePosition: latestLSN,
+					ReplyRequested:   true,
+					ClientTime:       time.Now(),
 				})
 			r.lastHeartBeatAt = now
 		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		msg, err := conn.PgConn().ReceiveMessage(ctx)
+		r.opt.Logger.Debug("Starting Processing Message %s %d", err, r.latestLSN)
 		cancel()
 		if err != nil {
 			if pgconn.Timeout(err) {
@@ -232,21 +228,28 @@ func (r *reader) Stop() error {
 }
 
 func (r *reader) handler(msg pgproto3.BackendMessage) error {
+	typ := reflect.TypeOf(msg)
+	log.Println("Typeof:", typ.String())
 	switch msg := msg.(type) {
 	case *pgproto3.CopyData:
+		log.Println("CopyData", msg.Data[0])
 		switch msg.Data[0] {
 		case pglogrepl.PrimaryKeepaliveMessageByteID:
-			ev, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data)
+			ev, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
 			if err == nil {
 				if r.lastEventAt == nil {
 					r.lastEventAt = new(time.Time)
 				}
-				*r.lastEventAt = ev.ServerTime
-				r.latestLSN = ev.ServerWALEnd
+				if ev.ServerTime.Unix() != 0 {
+					*r.lastEventAt = ev.ServerTime
+					r.latestLSN = ev.ServerWALEnd
+				}
 			}
 			break
 		case pglogrepl.XLogDataByteID:
 			return r.handleXLogData(msg)
+		case pglogrepl.StandbyStatusUpdateByteID:
+			log.Println("StandbyStatusUpdate", msg.Data)
 		}
 	}
 	return nil
