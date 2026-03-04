@@ -47,7 +47,10 @@ func (w *writer) Execute(e core.Event) error {
 		return nil
 	}
 
-	if e.Type != core.EventTypeDelete && w.opt.Connector.Type == model.ConnectorTypeStarRocks {
+	if w.opt.Connector.Type == model.ConnectorTypeStarRocks {
+		if e.Type == core.EventTypeDelete {
+			return nil
+		}
 		w.appendBatch(e)
 		if time.Now().Sub(w.Pipeline.CreatedAt) > 30*time.Second || w.Pipeline.Count > 1000 {
 			return w.processBatch()
@@ -97,7 +100,6 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 }
 
 func (w *writer) processBatch() error {
-	w.opt.Logger.Debug("Starting processBatch:%d", w.Pipeline.Count)
 	pipeline := w.Pipeline
 	w.Pipeline = core.NewPipeline()
 	for table, batch := range pipeline.Events {

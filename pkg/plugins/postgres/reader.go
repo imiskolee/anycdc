@@ -172,10 +172,17 @@ func (r *reader) Start() error {
 			goto end
 		default:
 		}
-		if now.Sub(r.lastHeartBeatAt) > 30*time.Second {
+		if now.Sub(r.lastHeartBeatAt) > 60*time.Second {
+			latestLSN, err := r.replication.getLatestPosition()
+			if err != nil {
+				latestLSN = r.latestLSN
+			}
 			_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
 				conn.Conn().PgConn(),
-				pglogrepl.StandbyStatusUpdate{WALWritePosition: r.latestLSN})
+				pglogrepl.StandbyStatusUpdate{WALWritePosition: latestLSN,
+					ReplyRequested: false,
+					ClientTime:     time.Now(),
+				})
 			r.lastHeartBeatAt = now
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
