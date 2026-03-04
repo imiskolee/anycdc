@@ -32,10 +32,8 @@ func NewSQLGenerator(connector *model.Connector, schema *schemas.Table, typeMap 
 
 func (s *SQLGenerator) DML(e core.Event) (string, []interface{}, error) {
 	switch e.Type {
-	case core.EventTypeInsert:
+	case core.EventTypeInsert, core.EventTypeUpdate:
 		return s.toInsert(e)
-	case core.EventTypeUpdate:
-		return s.toUpdate(e)
 	case core.EventTypeDelete:
 		return s.toDelete(e)
 	}
