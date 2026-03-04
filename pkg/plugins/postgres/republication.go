@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
 	"github.com/jackc/pglogrepl"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"sort"
 	"strings"
@@ -31,10 +30,10 @@ func (r *replication) getLatestPosition() (pglogrepl.LSN, error) {
 	return currentLSN, err
 }
 
-func (r *replication) GetServerLatestPosition(conn *pgx.Conn) (pglogrepl.LSN, error) {
+func (r *replication) GetServerLatestPosition() (pglogrepl.LSN, error) {
 	var currentLSN pglogrepl.LSN
 	query := `SELECT pg_current_wal_lsn();`
-	row := conn.QueryRow(context.Background(), query)
+	row := r.conn.QueryRow(context.Background(), query)
 	err := row.Scan(&currentLSN)
 	if err != nil {
 		r.logger.Error("Failed to get latest LSN: %s", err)

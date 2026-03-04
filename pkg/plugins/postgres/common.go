@@ -36,7 +36,6 @@ func Connect(connector *model.Connector) (*gorm.DB, error) {
 }
 
 func connectPGX(connector *model.Connector) (*pgxpool.Pool, error) {
-
 	config, err := pgxpool.ParseConfig(fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
 		connector.Username,
 		connector.Password,
@@ -47,8 +46,6 @@ func connectPGX(connector *model.Connector) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	config.ConnConfig.RuntimeParams["replication"] = "database"
 	config.ConnConfig.TLSConfig = nil
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 	config.MaxConns = 3
@@ -58,4 +55,26 @@ func connectPGX(connector *model.Connector) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 	return pool, nil
+}
+
+func connectReaderRepublication(connector *model.Connector) (*pgx.Conn, error) {
+	config, err := pgx.ParseConfig(fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
+		connector.Username,
+		connector.Password,
+		connector.Host,
+		connector.Port,
+		connector.Database,
+	))
+	if err != nil {
+		return nil, err
+	}
+	config.RuntimeParams["replication"] = "database"
+	config.TLSConfig = nil
+	config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+	config.ConnectTimeout = 10 * time.Second
+	conn, err := pgx.ConnectConfig(context.Background(), config)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
 }

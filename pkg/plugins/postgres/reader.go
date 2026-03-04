@@ -134,14 +134,14 @@ func (r *reader) Start() error {
 		fmt.Sprintf("publication_names '%s'", r.replication.publicationName),
 		"proto_version '1'",
 	}
-	conn, err := r.conn.Acquire(r.ctx)
+	conn, err := connectReaderRepublication(r.opt.Connector)
 	if err != nil {
 		return r.opt.Logger.Errorf("can not start reader for task %s: %v", r.opt.Task.Name, err)
 	}
-	defer conn.Release()
+	defer conn.Close(context.Background())
 	err = pglogrepl.StartReplication(
 		r.ctx,
-		conn.Conn().PgConn(),
+		conn.PgConn(),
 		r.replication.slotName,
 		r.latestLSN,
 		pglogrepl.StartReplicationOptions{
@@ -153,7 +153,7 @@ func (r *reader) Start() error {
 		return r.opt.Logger.Errorf("can not start replication %s", err)
 	}
 	defer (func() {
-		_, err := pglogrepl.SendStandbyCopyDone(context.Background(), conn.Conn().PgConn())
+		_, err := pglogrepl.SendStandbyCopyDone(context.Background(), conn.PgConn())
 		if err != nil {
 			r.opt.Logger.Error("failed stop replication,%s", err)
 			return
@@ -174,12 +174,12 @@ func (r *reader) Start() error {
 		default:
 		}
 		if now.Sub(r.lastHeartBeatAt) > 30*time.Second {
-			latestLSN, err := r.replication.GetServerLatestPosition(conn.Conn())
+			latestLSN, err := r.replication.GetServerLatestPosition()
 			if err != nil {
 				latestLSN = r.latestLSN
 			}
 			_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
-				conn.Conn().PgConn(),
+				conn.PgConn(),
 				pglogrepl.StandbyStatusUpdate{WALWritePosition: latestLSN,
 					ReplyRequested: false,
 					ClientTime:     time.Now(),
@@ -187,7 +187,7 @@ func (r *reader) Start() error {
 			r.lastHeartBeatAt = now
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		msg, err := conn.Conn().PgConn().ReceiveMessage(ctx)
+		msg, err := conn.PgConn().ReceiveMessage(ctx)
 		cancel()
 		if err != nil {
 			if pgconn.Timeout(err) {
