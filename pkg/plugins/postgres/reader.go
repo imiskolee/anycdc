@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	uuid "github.com/satori/go.uuid"
 	"log"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -180,14 +179,13 @@ func (r *reader) Start() error {
 				conn.PgConn(),
 				pglogrepl.StandbyStatusUpdate{
 					WALWritePosition: latestLSN,
-					ReplyRequested:   true,
+					ReplyRequested:   false,
 					ClientTime:       time.Now(),
 				})
 			r.lastHeartBeatAt = now
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		msg, err := conn.PgConn().ReceiveMessage(ctx)
-		r.opt.Logger.Debug("Starting Processing Message %s %d", err, r.latestLSN)
 		cancel()
 		if err != nil {
 			if pgconn.Timeout(err) {
@@ -227,11 +225,8 @@ func (r *reader) Stop() error {
 }
 
 func (r *reader) handler(msg pgproto3.BackendMessage) error {
-	typ := reflect.TypeOf(msg)
-	log.Println("Typeof:", typ.String())
 	switch msg := msg.(type) {
 	case *pgproto3.CopyData:
-		log.Println("CopyData", msg.Data[0])
 		switch msg.Data[0] {
 		case pglogrepl.PrimaryKeepaliveMessageByteID:
 			ev, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
