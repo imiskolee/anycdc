@@ -197,7 +197,6 @@ func (r *reader) Start() error {
 			r.retries++
 			continue
 		}
-
 		for i := 0; i < 3; i++ {
 			if loopError = r.handler(msg); loopError != nil {
 				r.opt.Logger.Error("failed handler msg: %s", err)

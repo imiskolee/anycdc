@@ -47,6 +47,10 @@ func (w *writer) Execute(e core.Event) error {
 		return nil
 	}
 
+	if e.Type == core.EventTypeUpdate {
+		e.Type = core.EventTypeInsert
+	}
+
 	if w.opt.Connector.Type == model.ConnectorTypeStarRocks {
 		if e.Type == core.EventTypeDelete {
 			return nil
