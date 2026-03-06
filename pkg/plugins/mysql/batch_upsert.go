@@ -46,9 +46,8 @@ func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.
 
 			if connector.Type == model.ConnectorTypeStarRocks {
 				if val == nil {
-					f, ok := sch.GetFieldByName(field.Name)
-					if ok && !f.Nullable {
-						switch f.DataType {
+					if !column.Nullable {
+						switch column.DataType {
 						case schemas.TypeBool:
 							val = false
 						case schemas.TypeString:
@@ -59,6 +58,8 @@ func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.
 							val = "{}"
 						case schemas.TypeTimestamp:
 							val = time.Time{}
+						default:
+							val = ""
 						}
 					}
 				}
