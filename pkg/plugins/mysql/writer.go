@@ -7,6 +7,7 @@ import (
 	"github.com/imiskolee/anycdc/pkg/model"
 	"github.com/imiskolee/anycdc/pkg/plugins/common_sql"
 	"gorm.io/gorm"
+	"sync"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type writer struct {
 	conn          *gorm.DB
 	schemaManager core.SchemaManager
 	Pipeline      *core.Pipeline
+	mutex         sync.Mutex
 }
 
 func NewWriter(ctx context.Context, opt interface{}) core.Writer {
@@ -104,6 +106,8 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 }
 
 func (w *writer) processBatch() error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	pipeline := w.Pipeline
 	w.Pipeline = core.NewPipeline()
 	for table, batch := range pipeline.Events {
