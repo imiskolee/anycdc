@@ -7,6 +7,7 @@ import (
 	"github.com/imiskolee/anycdc/pkg/core/types"
 	"github.com/imiskolee/anycdc/pkg/model"
 	"strings"
+	"time"
 )
 
 func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.Map, records []core.EventRecord) (string, []interface{}, error) {
@@ -41,6 +42,26 @@ func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.
 				}
 			} else {
 				val = nil
+			}
+
+			if connector.Type == model.ConnectorTypeStarRocks {
+				if val == nil {
+					f, ok := sch.GetFieldByName(field.Name)
+					if ok && !f.Nullable {
+						switch f.DataType {
+						case schemas.TypeBool:
+							val = false
+						case schemas.TypeString:
+							val = ""
+						case schemas.TypeUint, schemas.TypeInt, schemas.TypeDecimal:
+							val = 0
+						case schemas.TypeJSON:
+							val = "{}"
+						case schemas.TypeTimestamp:
+							val = time.Time{}
+						}
+					}
+				}
 			}
 			rowPlaceHolders = append(rowPlaceHolders, "?")
 			values = append(values, val)
