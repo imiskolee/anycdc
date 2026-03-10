@@ -79,16 +79,15 @@ func (r *reader) Prepare() error {
 		return r.opt.Logger.Errorf("can not prepare reader initial extra: %v", err)
 	}
 	r.binlogCfg = replication.BinlogSyncerConfig{
-		Host:       r.opt.Connector.Host,
-		Port:       uint16(r.opt.Connector.Port),
-		User:       r.opt.Connector.Username,
-		Password:   r.opt.Connector.Password,
-		Charset:    "utf8mb4",
-		ServerID:   uint32(extra.ServerID), // 伪从库 ID（必须唯一，不能与主库/其他从库重复）
-		Flavor:     "mariadb",              // 数据库类型（mysql/mariadb）
-		ParseTime:  true,
-		UseDecimal: true,
-
+		Host:                 r.opt.Connector.Host,
+		Port:                 uint16(r.opt.Connector.Port),
+		User:                 r.opt.Connector.Username,
+		Password:             r.opt.Connector.Password,
+		Charset:              "utf8mb4",
+		ServerID:             uint32(extra.ServerID), // 伪从库 ID（必须唯一，不能与主库/其他从库重复）
+		Flavor:               "mariadb",              // 数据库类型（mysql/mariadb）
+		ParseTime:            true,
+		UseDecimal:           false,
 		MaxReconnectAttempts: 100,
 		HeartbeatPeriod:      60 * time.Second,
 	}
