@@ -107,9 +107,9 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 
 func (w *writer) processBatch() error {
 	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	pipeline := w.Pipeline
 	w.Pipeline = core.NewPipeline()
+	w.mutex.Unlock()
 	for table, batch := range pipeline.Events {
 		w.opt.Logger.Debug("Starting processBatch:%s %d", table, len(batch))
 		if err := w.ExecuteBatch(&batch[0].SourceSchema, batch); err != nil {
@@ -121,5 +121,7 @@ func (w *writer) processBatch() error {
 }
 
 func (w *writer) appendBatch(event core.Event) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	w.Pipeline.Append("", event)
 }
