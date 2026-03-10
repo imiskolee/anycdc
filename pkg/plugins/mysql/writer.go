@@ -58,7 +58,7 @@ func (w *writer) Execute(e core.Event) error {
 			return nil
 		}
 		w.appendBatch(e)
-		if time.Now().Sub(w.Pipeline.CreatedAt) > 60*time.Second || w.Pipeline.Count > 5000 {
+		if time.Now().Sub(w.Pipeline.CreatedAt) > 1*time.Second || w.Pipeline.Count > 1 {
 			return w.processBatch()
 		}
 		return nil
@@ -87,12 +87,12 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 		w.opt.Logger.Debug("Skipped event, table %s do not exists on the connector", tableName)
 		return nil
 	}
-
+	w.opt.Logger.Debug("Converted Records: %v", records)
 	convertedRecord := make([]core.EventRecord, len(records))
 	for i, record := range records {
 		convertedRecord[i] = record.Record.ConvertRecord(sch)
 	}
-
+	w.opt.Logger.Debug("After Converted Records: %v", convertedRecord)
 	sql, params, err := batchUpsert(w.opt.Connector, sch, dataTypes, convertedRecord)
 	if err != nil {
 		return w.opt.Logger.Errorf("cannot generate batch SQL: %v", err)

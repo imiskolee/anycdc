@@ -6,6 +6,7 @@ import (
 	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"github.com/imiskolee/anycdc/pkg/core/types"
 	"github.com/imiskolee/anycdc/pkg/model"
+	"log"
 	"strings"
 	"time"
 )
@@ -38,9 +39,11 @@ func batchUpsert(connector *model.Connector, sch *schemas.Table, typeMap *types.
 			if err == nil {
 				val, err = typeMap.Decode(field.Value)
 				if err != nil {
+					log.Println("Failed to decode field ", column.Name)
 					return "", nil, err
 				}
 			} else {
+				log.Println("Failed to get field ", column.Name)
 				val = nil
 			}
 
