@@ -88,6 +88,9 @@ services:
       MYSQL_DATABASE: anycdc_test
     ports:
       - "29030:9030"
+      - "28030:8030"
+      - "28040:8040"
+      - "29040:9040"
   es_1:
     image: elasticsearch:8.14.0
     container_name: es_1

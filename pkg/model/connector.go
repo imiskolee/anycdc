@@ -19,6 +19,7 @@ type Connector struct {
 	Username   string `gorm:"column:username;type:varchar(255)" json:"username" validate:"min=0,max=128"`
 	Password   string `gorm:"column:password;type:varchar(255)" json:"password" validate:"min=0,max=128"`
 	Database   string `gorm:"column:database;type:varchar(255)" json:"database" validate:"min=0,max=128"`
+	Extra      string `gorm:"column:extra;type:varchar(255)" json:"extra" validate:"min=0,max=65535"`
 }
 
 func (*Connector) TableName() string {

@@ -56,6 +56,12 @@ export default {
         {
             name : "database",
             type : "string",
-        }
+        },
+        {
+            name : "extra",
+            type: "string",
+            placeholder : '{"fe_host":"127.0.0.1","fe_port":"8040"}',
+            hiddenOnList: true
+        },
     ]
 }

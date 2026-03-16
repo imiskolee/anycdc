@@ -111,7 +111,9 @@ func (r *reader) Start() error {
 		r.opt.Logger.Error("can not parse last cdc position: %v", err)
 		return err
 	}
-	streamer, err := r.syncer.StartSync(r.latestPosition)
+	startPosition := r.latestPosition
+	startPosition.Pos = 4
+	streamer, err := r.syncer.StartSync(startPosition)
 	if err != nil {
 		r.opt.Logger.Error("failed to start syncer, %s", err.Error())
 		return err
@@ -135,6 +137,9 @@ func (r *reader) Start() error {
 		if errors.Is(err, context.Canceled) {
 			r.opt.Logger.Info("successfully stopped reader %s", r.opt.Connector.Name)
 			goto end
+		}
+		if event.Header.LogPos < r.latestPosition.Pos {
+			continue
 		}
 		if err != nil {
 			r.retries++

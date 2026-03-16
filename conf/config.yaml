@@ -1,7 +1,7 @@
 data_dir: .
 log_dir: ./logs
 log_level: debug
-tester: true
+tester: false
 admin:
   listen: :8971
   tester: false
