@@ -137,7 +137,7 @@ func (w *writer) processBatch() error {
 	return nil
 }
 
-func (w *writer) pushStarRocks(table string, events []core.EventRecord) error {
+func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) error {
 	w.opt.Logger.Debug("Starting Push To SR")
 	var records []string
 	var jsonPaths []string
@@ -146,13 +146,32 @@ func (w *writer) pushStarRocks(table string, events []core.EventRecord) error {
 		jsonPaths = append(jsonPaths, fmt.Sprintf("\"$.%s\"", col.Name))
 		columns = append(columns, col.Name)
 	}
+
 	for _, event := range events {
 		data := make(map[string]interface{})
-		for _, col := range event.Columns {
-			val, err := dataTypes.Decode(col.Value)
-			if err != nil {
-				w.opt.Logger.Error("Can not decode column %s: %v", col.Name, err)
-				continue
+		for _, col := range sch.Columns {
+			var val interface{}
+			f, err := event.FieldByName(col.Name)
+			if err == nil {
+				val, err = dataTypes.Decode(f.Value)
+			}
+			if val == nil {
+				if !col.Nullable {
+					switch col.DataType {
+					case schemas.TypeBool:
+						val = false
+					case schemas.TypeString:
+						val = ""
+					case schemas.TypeUint, schemas.TypeInt, schemas.TypeDecimal:
+						val = 0
+					case schemas.TypeJSON:
+						val = "{}"
+					case schemas.TypeTimestamp:
+						val = time.Time{}
+					default:
+						val = ""
+					}
+				}
 			}
 			data[col.Name] = val
 		}
