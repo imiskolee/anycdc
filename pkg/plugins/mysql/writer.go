@@ -107,7 +107,7 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 	w.opt.Logger.Error("Starting Batch")
 
 	if w.opt.Connector.Type == model.ConnectorTypeStarRocks {
-		return w.pushStarRocks(tableName, convertedRecord)
+		return w.pushStarRocks(sch, convertedRecord)
 	}
 
 	sql, params, err := batchUpsert(w.opt.Connector, sch, dataTypes, convertedRecord)
