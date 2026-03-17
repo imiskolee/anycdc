@@ -194,7 +194,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 		ssE.FEHost,
 		ssE.FEPort,
 		w.opt.Connector.Database,
-		table,
+		sch.Name,
 	)
 
 	request, _ := http.NewRequest(http.MethodPut, url, bytes.NewReader([]byte(converted)))
