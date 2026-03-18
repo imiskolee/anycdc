@@ -30,6 +30,14 @@ type writer struct {
 	mutex         sync.Mutex
 }
 
+var httpClient *http.Client
+
+func init() {
+	httpClient = &http.Client{
+		Timeout: 30 * time.Second,
+	}
+}
+
 func NewWriter(ctx context.Context, opt interface{}) core.Writer {
 	o := opt.(*core.WriterOption)
 	return &writer{
@@ -92,7 +100,7 @@ func (w *writer) Execute(e core.Event) error {
 }
 
 func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event) error {
-	w.opt.Logger.Error("Starting Batch")
+	w.opt.Logger.Error("Starting Batch %s", sourceSchema.Name)
 	tableName := records[0].DestinationTableName
 	sch := w.schemaManager.Get(w.opt.Connector.Database, tableName)
 	if len(sch.Columns) < 1 {
@@ -103,8 +111,6 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 	for i, record := range records {
 		convertedRecord[i] = record.Record.ConvertRecord(sch)
 	}
-
-	w.opt.Logger.Error("Starting Batch")
 
 	if w.opt.Connector.Type == model.ConnectorTypeStarRocks {
 		return w.pushStarRocks(sch, convertedRecord)
@@ -128,7 +134,7 @@ func (w *writer) processBatch() error {
 	pipeline := w.Pipeline
 	w.Pipeline = core.NewPipeline()
 	for table, batch := range pipeline.Events {
-		w.opt.Logger.Debug("Starting processBatch:%s %d", table, len(batch))
+		w.opt.Logger.Error("Starting processBatch:%s %d", table, len(batch))
 		if err := w.ExecuteBatch(&batch[0].SourceSchema, batch); err != nil {
 			return err
 		}
@@ -138,7 +144,7 @@ func (w *writer) processBatch() error {
 }
 
 func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) error {
-	w.opt.Logger.Debug("Starting Push To SR, table name=%s", sch.Name)
+	w.opt.Logger.Error("Starting Push To SR, table name=%s", sch.Name)
 	var records []string
 	var jsonPaths []string
 	var columns []string
@@ -205,7 +211,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 	request.Header.Set("strict_mode", "true")
 	request.Header.Set("Expect", "100-continue")
 
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := httpClient.Do(request)
 	if err != nil {
 		w.opt.Logger.Error("Can not push to sr:%s", err)
 		return err
@@ -218,6 +224,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 	if resp.StatusCode != 200 || respData.Status != "Success" {
 		return w.opt.Logger.Errorf("Can not load data:%s", string(content))
 	}
+	w.opt.Logger.Error("Completed push to SR %s", sch.Name)
 	return nil
 }
 

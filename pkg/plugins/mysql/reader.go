@@ -138,16 +138,12 @@ func (r *reader) Start() error {
 			r.opt.Logger.Info("successfully stopped reader %s", r.opt.Connector.Name)
 			goto end
 		}
-		if event.Header.LogPos < r.latestPosition.Pos {
-			continue
-		}
 		if err != nil {
 			r.retries++
 			r.opt.Logger.Error("failed to reader event,%s", err.Error())
 			time.Sleep(time.Duration(r.retries) * time.Second)
 			continue
 		}
-		r.opt.Logger.Debug("reader event: %+v", event.Header.EventType)
 		if err := r.handler(event); err != nil {
 			r.retries++
 			r.opt.Logger.Error("failed to handle event,%s", err.Error())
