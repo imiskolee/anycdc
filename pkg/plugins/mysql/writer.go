@@ -210,6 +210,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 	request.Header.Set("columns", strings.Join(columns, ","))
 	request.Header.Set("strict_mode", "true")
 	request.Header.Set("Expect", "100-continue")
+	request.Header.Set("ignore_json_size", "true")
 
 	resp, err := httpClient.Do(request)
 	if err != nil {
