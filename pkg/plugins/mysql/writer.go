@@ -138,13 +138,13 @@ func (w *writer) processBatch() error {
 }
 
 func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) error {
-	w.opt.Logger.Debug("Starting Push To SR")
+	w.opt.Logger.Debug("Starting Push To SR, table name=%s", sch.Name)
 	var records []string
 	var jsonPaths []string
 	var columns []string
 	for _, col := range events[0].Columns {
-		jsonPaths = append(jsonPaths, fmt.Sprintf("\"$.%s\"", col.Name))
-		columns = append(columns, col.Name)
+		jsonPaths = append(jsonPaths, fmt.Sprintf("\"$.`%s`\"", col.Name))
+		columns = append(columns, fmt.Sprintf("`%s`", col.Name))
 	}
 
 	for _, event := range events {
@@ -173,7 +173,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 					}
 				}
 			}
-			data[col.Name] = val
+			data[fmt.Sprintf("`%s`", col.Name)] = val
 		}
 		jsonStr, _ := json.Marshal(data)
 		records = append(records, string(jsonStr))
