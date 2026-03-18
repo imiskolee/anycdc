@@ -77,7 +77,7 @@ func (w *writer) Execute(e core.Event) error {
 			return nil
 		}
 		w.appendBatch(e)
-		if time.Now().Sub(w.Pipeline.CreatedAt) > 360*time.Second || w.Pipeline.Count > 10000 {
+		if time.Now().Sub(w.Pipeline.CreatedAt) > 360*time.Second || w.Pipeline.Count > 100000 {
 			return w.processBatch()
 		}
 		return nil
