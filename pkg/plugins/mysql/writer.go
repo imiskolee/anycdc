@@ -173,7 +173,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 					case schemas.TypeJSON:
 						val = "{}"
 					case schemas.TypeTimestamp:
-						val = time.Time{}
+						val = time.Unix(0, 0)
 					default:
 						val = ""
 					}
