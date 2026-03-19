@@ -196,7 +196,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 		w.opt.Logger.Error("Unmarshal err: %v", err)
 		return err
 	}
-	url := fmt.Sprintf("http://%s:%d/api/%s/%s/_stream_load",
+	url := fmt.Sprintf("https://%s:%d/api/%s/%s/_stream_load",
 		ssE.FEHost,
 		ssE.FEPort,
 		w.opt.Connector.Database,
@@ -223,7 +223,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 		w.opt.Logger.Error("Can not push to sr:%s", err)
 	}
 	if resp.StatusCode != 200 || respData.Status != "Success" {
-		return w.opt.Logger.Errorf("Can not load data:%s", string(content))
+		return w.opt.Logger.Errorf("Can not load data,%s,%s", sch.Name, string(content))
 	}
 	w.opt.Logger.Error("Completed push to SR %s", sch.Name)
 	return nil
