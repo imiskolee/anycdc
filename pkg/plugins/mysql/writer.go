@@ -165,7 +165,12 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 				switch v := val.(type) {
 				case time.Time:
 					if v.Year() == 0 {
-						v = time.Unix(0, 0)
+						val = nil
+					}
+					break
+				case *time.Time:
+					if v.Year() == 0 {
+						val = nil
 					}
 				}
 			}
