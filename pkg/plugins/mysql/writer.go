@@ -3,6 +3,7 @@ package mysql
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
@@ -161,17 +162,36 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 			if err == nil {
 				val, err = dataTypes.Decode(f.Value)
 			}
-			if col.DataType == schemas.TypeTimestamp {
-				switch v := val.(type) {
-				case time.Time:
-					if v.Year() == 0 {
-						val = nil
-					}
-					break
-				case *time.Time:
-					if v.Year() == 0 {
-						val = nil
-					}
+			switch v := val.(type) {
+			case *time.Time:
+				if v.Year() < 1970 {
+					val = nil
+				}
+				break
+			case time.Time:
+				if v.Year() < 1970 {
+					val = nil
+				}
+				break
+			case sql.NullTime:
+				if !v.Valid {
+					val = nil
+				} else if v.Time.Year() < 1970 {
+					val = nil
+				}
+				break
+			case *sql.NullTime:
+				if !v.Valid {
+					val = nil
+				} else if v.Time.Year() < 1970 {
+					val = nil
+				}
+				break
+			case sql.Null[time.Time]:
+				if !v.Valid {
+					val = nil
+				} else if v.V.Year() < 1970 {
+					val = nil
 				}
 			}
 			if val == nil {
@@ -186,7 +206,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 					case schemas.TypeJSON:
 						val = "{}"
 					case schemas.TypeTimestamp:
-						val = time.Unix(0, 0)
+						val = sql.NullTime{Time: time.Unix(0, 0)}
 					default:
 						val = ""
 					}
