@@ -86,10 +86,11 @@ services:
     container_name: sr-db-1
     environment:
       MYSQL_DATABASE: anycdc_test
+      CONFIG_FORCE_enable_http_waiting_task: true
     ports:
       - "29030:9030"
-      - "28030:8030"
-      - "28040:8040"
+      - "8030:8030"
+      - "8040:8040"
       - "29040:9040"
   es_1:
     image: elasticsearch:8.14.0

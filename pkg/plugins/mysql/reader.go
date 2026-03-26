@@ -114,11 +114,13 @@ func (r *reader) Start() error {
 	startPosition := r.latestPosition
 	startPosition.Pos = 4
 	streamer, err := r.syncer.StartSync(startPosition)
+	lastSyncTime := time.Now()
 	if err != nil {
 		r.opt.Logger.Error("failed to start syncer, %s", err.Error())
 		return err
 	}
 	for {
+		now := time.Now()
 		if r.retries > 10 {
 			return r.opt.Logger.Errorf("reader stopped,because of too many retries")
 		}
@@ -151,7 +153,8 @@ func (r *reader) Start() error {
 			break
 		}
 		r.retries = 0
-		if event.Header.EventType == replication.XID_EVENT {
+		if event.Header.EventType == replication.XID_EVENT && now.Sub(lastSyncTime) > 10*time.Minute {
+			lastSyncTime = now
 			r.latestPosition = r.syncer.GetNextPosition()
 			pt := time.Unix(int64(event.Header.Timestamp), 0)
 			r.lastEventAt = &pt
@@ -250,6 +253,8 @@ func (r *reader) handler(e *replication.BinlogEvent) error {
 			} else {
 				ev.Type = core.EventTypeInsert
 			}
+			pos, _ := json.Marshal(r.syncer.GetNextPosition())
+			ev.LastPOS = string(pos)
 			if err := r.opt.Subscriber.ReaderEvent(ev); err != nil {
 				return err
 			}

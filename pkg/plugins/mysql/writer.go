@@ -114,9 +114,9 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 	}
 
 	if w.opt.Connector.Type == model.ConnectorTypeStarRocks {
-		return w.pushStarRocks(sch, convertedRecord)
+		ret := w.pushStarRocks(sch, convertedRecord)
+		return ret
 	}
-
 	sql, params, err := batchUpsert(w.opt.Connector, sch, dataTypes, convertedRecord)
 	if err != nil {
 		return w.opt.Logger.Errorf("cannot generate batch SQL: %v", err)
@@ -140,7 +140,6 @@ func (w *writer) processBatch() error {
 			return err
 		}
 	}
-
 	return nil
 }
 

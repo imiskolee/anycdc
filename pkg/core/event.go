@@ -69,4 +69,5 @@ type Event struct {
 	OldRecord            *EventRecord //for update
 	SourceSchema         schemas.Table
 	DestinationTableName string
+	LastPOS              string
 }

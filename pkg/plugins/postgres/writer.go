@@ -79,3 +79,7 @@ func (w *writer) ExecuteBatch(sourceSchema *schemas.Table, records []core.Event)
 	}
 	return nil
 }
+
+func (w *writer) LatestFlushedPOS() string {
+	return ""
+}

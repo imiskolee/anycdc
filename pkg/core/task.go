@@ -410,7 +410,6 @@ func (s *Task) ReaderEvent(e Event) error {
 	if ok && err != nil {
 		return err.(error)
 	}
-
 	return s.threadPool.Submit(s.runTask(e))
 }
 
