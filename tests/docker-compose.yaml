@@ -48,22 +48,26 @@ services:
       -c max_replication_slots=10
     restart: unless-stopped
 
-  mysql_1:
-    image: mysql:latest
-    container_name: mysql-db-1
+  mysql_10:
+    image: mysql:5.7
+    container_name: mysql-db-10
     environment:
       MYSQL_ROOT_PASSWORD: anycdc
       MYSQL_DATABASE: anycdc_test
     ports:
       - "23306:3306"
     command: >
+      mysqld
       --server-id=1 
       --log-bin=mysql-bin 
       --binlog-format=ROW 
       --binlog-row-image=FULL
       --gtid_mode=ON
+      --enforce_gtid_consistency=ON
       --max_allowed_packet=1073741824
+      --sql-mode=NO_ENGINE_SUBSTITUTION
     restart: unless-stopped
+    entrypoint: /entrypoint.sh
 
   mysql_2:
     image: mysql:latest

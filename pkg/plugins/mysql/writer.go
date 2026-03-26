@@ -78,7 +78,7 @@ func (w *writer) Execute(e core.Event) error {
 			return nil
 		}
 		w.appendBatch(e)
-		if time.Now().Sub(w.Pipeline.CreatedAt) > 360*time.Second || w.Pipeline.Count > 100000 {
+		if time.Now().Sub(w.Pipeline.CreatedAt) > 300*time.Second || w.Pipeline.Count > 100000 {
 			return w.processBatch()
 		}
 		return nil
@@ -161,6 +161,12 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 			if err == nil {
 				val, err = dataTypes.Decode(f.Value)
 			}
+			if col.DataType == schemas.TypeTimestamp {
+				_, err := time.Parse(fmt.Sprint(val), "2006-01-02 15:04:05")
+				if err != nil {
+					val = nil
+				}
+			}
 			switch v := val.(type) {
 			case *time.Time:
 				if v.Year() < 1970 {
@@ -205,7 +211,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 					case schemas.TypeJSON:
 						val = "{}"
 					case schemas.TypeTimestamp:
-						val = sql.NullTime{Time: time.Unix(0, 0)}
+						val = time.Unix(0, 0)
 					default:
 						val = ""
 					}
