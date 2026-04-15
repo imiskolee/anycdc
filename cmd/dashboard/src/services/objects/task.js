@@ -62,6 +62,11 @@ export default {
             placeholder: "max threads for this task,default as 5"
         },
         {
+            name : "cdc_delay_time",
+            type : "number",
+            hiddenOnList: true,
+        },
+        {
             name : "status",
         },
     ]

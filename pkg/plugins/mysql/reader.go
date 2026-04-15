@@ -146,11 +146,17 @@ func (r *reader) Start() error {
 			time.Sleep(time.Duration(r.retries) * time.Second)
 			continue
 		}
-		if err := r.handler(event); err != nil {
-			r.retries++
-			r.opt.Logger.Error("failed to handle event,%s", err.Error())
-			time.Sleep(time.Duration(r.retries) * time.Second)
+		for i := 0; i < 10; i++ {
+			if err = r.handler(event); err != nil {
+				r.retries++
+				r.opt.Logger.Error("failed to handle event,%s", err.Error())
+				time.Sleep(time.Duration((i+1)*10) * time.Second)
+				continue
+			}
 			break
+		}
+		if err != nil {
+			goto end
 		}
 		r.retries = 0
 		if event.Header.EventType == replication.XID_EVENT && now.Sub(lastSyncTime) > 10*time.Minute {

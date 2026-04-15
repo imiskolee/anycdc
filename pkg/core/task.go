@@ -114,6 +114,7 @@ type Task struct {
 	dumperWG          sync.WaitGroup
 	threadPool        *ants.Pool
 	tableErrors       sync.Map
+	lastSaveAt        time.Time
 }
 
 func NewTask(id string) *Task {
@@ -131,6 +132,7 @@ func NewTask(id string) *Task {
 		metric: metric{
 			task: &model.Task{Base: model.Base{ID: id}},
 		},
+		lastSaveAt: time.Now(),
 	}
 }
 
@@ -427,6 +429,16 @@ func (s *Task) runTask(e Event) func() {
 }
 
 func (s *Task) Save() error {
+	if s.state.Task.CDCStatus != model.CDCStatusRunning {
+		return nil
+	}
+	now := time.Now()
+	if s.state.Task.CDCDelayTime > 0 {
+		if now.Sub(s.lastSaveAt) < time.Duration(s.state.Task.CDCDelayTime)*time.Minute {
+			return nil
+		}
+	}
+	s.lastSaveAt = now
 	if s.dumperRunning {
 		s.summary()
 		s.metric.flush(model.TaskModeDumper)

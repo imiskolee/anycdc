@@ -3,7 +3,6 @@ package mysql
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
@@ -35,7 +34,7 @@ var httpClient *http.Client
 
 func init() {
 	httpClient = &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: 120 * time.Second,
 	}
 }
 
@@ -78,7 +77,7 @@ func (w *writer) Execute(e core.Event) error {
 			return nil
 		}
 		w.appendBatch(e)
-		if time.Now().Sub(w.Pipeline.CreatedAt) > 300*time.Second || w.Pipeline.Count > 100000 {
+		if time.Now().Sub(w.Pipeline.CreatedAt) > 300*time.Second || w.Pipeline.Count > 50000 {
 			return w.processBatch()
 		}
 		return nil
@@ -133,13 +132,13 @@ func (w *writer) processBatch() error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	pipeline := w.Pipeline
-	w.Pipeline = core.NewPipeline()
 	for table, batch := range pipeline.Events {
 		w.opt.Logger.Error("Starting processBatch:%s %d", table, len(batch))
 		if err := w.ExecuteBatch(&batch[0].SourceSchema, batch); err != nil {
 			return err
 		}
 	}
+	w.Pipeline = core.NewPipeline()
 	return nil
 }
 
@@ -165,38 +164,16 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 				_, err := time.Parse(fmt.Sprint(val), "2006-01-02 15:04:05")
 				if err != nil {
 					val = nil
+				} else {
+					val = strings.Replace(fmt.Sprint(val), "0000-00-00", "1970-01-01", -1)
 				}
 			}
-			switch v := val.(type) {
-			case *time.Time:
-				if v.Year() < 1970 {
+			if col.DataType == schemas.TypeDate {
+				_, err := time.Parse(fmt.Sprint(val), "2006-01-02")
+				if err != nil {
 					val = nil
-				}
-				break
-			case time.Time:
-				if v.Year() < 1970 {
-					val = nil
-				}
-				break
-			case sql.NullTime:
-				if !v.Valid {
-					val = nil
-				} else if v.Time.Year() < 1970 {
-					val = nil
-				}
-				break
-			case *sql.NullTime:
-				if !v.Valid {
-					val = nil
-				} else if v.Time.Year() < 1970 {
-					val = nil
-				}
-				break
-			case sql.Null[time.Time]:
-				if !v.Valid {
-					val = nil
-				} else if v.V.Year() < 1970 {
-					val = nil
+				} else {
+					val = strings.Replace(fmt.Sprint(val), "0000-00-00", "1970-01-01", -1)
 				}
 			}
 			if val == nil {
@@ -261,6 +238,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 		w.opt.Logger.Error("Can not push to sr:%s", err)
 	}
 	if resp.StatusCode != 200 || respData.Status != "Success" {
+		time.Sleep(60 * time.Second)
 		return w.opt.Logger.Errorf("Can not load data,%s,%s", sch.Name, string(content))
 	}
 	w.opt.Logger.Error("Completed push to SR %s", sch.Name)
@@ -268,5 +246,7 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 }
 
 func (w *writer) appendBatch(event core.Event) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
 	w.Pipeline.Append("", event)
 }

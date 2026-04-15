@@ -62,6 +62,7 @@ type Task struct {
 	LastCDCPosition string     `gorm:"column:last_cdc_position;type:varchar(255)" json:"last_cdc_position"`
 	LastCDCAt       *time.Time `gorm:"column:last_cdc_at;type:timestamp" json:"last_cdc_at"`
 	LastStarted     *time.Time `gorm:"column:last_started;type:timestamp" json:"last_started"`
+	CDCDelayTime    int        `gorm:"column:cdc_delay_time;type:int" json:"cdc_delay_time"`
 	ThreadNumber    int        `gorm:"column:thread_number;type:int" json:"thread_number"`
 	Status          string     `gorm:"column:status;type:varchar(255)" json:"status"`
 }
