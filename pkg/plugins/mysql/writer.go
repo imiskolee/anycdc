@@ -3,6 +3,7 @@ package mysql
 import (
 	"bytes"
 	"context"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"github.com/imiskolee/anycdc/pkg/core"
@@ -161,6 +162,12 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 				val, err = dataTypes.Decode(f.Value)
 			}
 			if col.DataType == schemas.TypeTimestamp {
+				w.opt.Logger.Error("Date column:", col.DataType, fmt.Sprint(val))
+				driverVal, ok := val.(driver.Valuer)
+				if ok {
+					val, _ = driverVal.Value()
+				}
+				w.opt.Logger.Error("Timestamp column:", col.DataType, fmt.Sprint(val))
 				_, err := time.Parse(fmt.Sprint(val), "2006-01-02 15:04:05")
 				if err != nil {
 					val = nil
@@ -169,6 +176,12 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 				}
 			}
 			if col.DataType == schemas.TypeDate {
+				w.opt.Logger.Error("Date column:", col.DataType, fmt.Sprint(val))
+				driverVal, ok := val.(driver.Valuer)
+				if ok {
+					val, _ = driverVal.Value()
+				}
+				w.opt.Logger.Error("Date column:", col.DataType, fmt.Sprint(val))
 				_, err := time.Parse(fmt.Sprint(val), "2006-01-02")
 				if err != nil {
 					val = nil
