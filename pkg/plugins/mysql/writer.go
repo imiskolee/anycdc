@@ -161,34 +161,35 @@ func (w *writer) pushStarRocks(sch *schemas.Table, events []core.EventRecord) er
 			if err == nil {
 				val, err = dataTypes.Decode(f.Value)
 			}
-			if col.DataType == schemas.TypeTimestamp {
-				w.opt.Logger.Error("Date column:", col.DataType, fmt.Sprint(val))
-				driverVal, ok := val.(driver.Valuer)
-				if ok {
-					val, _ = driverVal.Value()
+			if val != nil {
+				if col.DataType == schemas.TypeTimestamp {
+					driverVal, ok := val.(driver.Valuer)
+					if ok {
+						val, _ = driverVal.Value()
+					}
+					if strings.Contains(fmt.Sprint(val), "0000-00-00") || fmt.Sprint(val) == "" {
+						if col.Nullable {
+							val = nil
+						} else {
+							val = "1970-01-01 00:00:00"
+						}
+					}
 				}
-				w.opt.Logger.Error("Timestamp column:", col.DataType, fmt.Sprint(val))
-				_, err := time.Parse(fmt.Sprint(val), "2006-01-02 15:04:05")
-				if err != nil {
-					val = nil
-				} else {
-					val = strings.Replace(fmt.Sprint(val), "0000-00-00", "1970-01-01", -1)
+				if col.DataType == schemas.TypeDate {
+					driverVal, ok := val.(driver.Valuer)
+					if ok {
+						val, _ = driverVal.Value()
+					}
+					if strings.Contains(fmt.Sprint(val), "0000-00-00") || fmt.Sprint(val) == "" {
+						if col.Nullable {
+							val = nil
+						} else {
+							val = "1970-01-01"
+						}
+					}
 				}
 			}
-			if col.DataType == schemas.TypeDate {
-				w.opt.Logger.Error("Date column:", col.DataType, fmt.Sprint(val))
-				driverVal, ok := val.(driver.Valuer)
-				if ok {
-					val, _ = driverVal.Value()
-				}
-				w.opt.Logger.Error("Date column:", col.DataType, fmt.Sprint(val))
-				_, err := time.Parse(fmt.Sprint(val), "2006-01-02")
-				if err != nil {
-					val = nil
-				} else {
-					val = strings.Replace(fmt.Sprint(val), "0000-00-00", "1970-01-01", -1)
-				}
-			}
+
 			if val == nil {
 				if !col.Nullable {
 					switch col.DataType {
