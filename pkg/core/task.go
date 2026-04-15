@@ -176,6 +176,7 @@ func (s *Task) Start() error {
 			return err
 		}
 	}
+	s.lastSaveAt = time.Now()
 	if s.state.Task.CDCEnabled {
 		if err := s.startCDC(); err != nil {
 			return err
@@ -429,12 +430,16 @@ func (s *Task) runTask(e Event) func() {
 }
 
 func (s *Task) Save() error {
-	if s.state.Task.CDCStatus != model.CDCStatusRunning {
+	task, err := model.GetTaskByID(s.state.Task.ID)
+	if err != nil {
+		return err
+	}
+	if task.CDCStatus != model.CDCStatusRunning {
 		return nil
 	}
 	now := time.Now()
-	if s.state.Task.CDCDelayTime > 0 {
-		if now.Sub(s.lastSaveAt) < time.Duration(s.state.Task.CDCDelayTime)*time.Minute {
+	if task.CDCDelayTime > 0 {
+		if now.Sub(s.lastSaveAt) < time.Duration(task.CDCDelayTime)*time.Minute {
 			return nil
 		}
 	}

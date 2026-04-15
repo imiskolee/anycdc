@@ -133,3 +133,7 @@ func (s *Task) PartialUpdates(val map[string]interface{}) error {
 	}
 	return nil
 }
+
+func (s *Task) Reload() {
+
+}
