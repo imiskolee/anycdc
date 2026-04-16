@@ -33,6 +33,7 @@ type reader struct {
 	relations       map[uint32]pglogrepl.RelationMessageV2
 	lastHeartBeatAt time.Time
 	lastEventAt     *time.Time
+	lastSaveAt      time.Time
 	schemaManager   core.SchemaManager
 }
 
@@ -40,10 +41,11 @@ func newReader(ctx context.Context, opts interface{}) core.Reader {
 	c, cancel := context.WithCancel(ctx)
 	o := opts.(*core.ReaderOption)
 	reader := &reader{
-		ctx:       c,
-		cancel:    cancel,
-		opt:       o,
-		relations: make(map[uint32]pglogrepl.RelationMessageV2),
+		ctx:        c,
+		cancel:     cancel,
+		opt:        o,
+		lastSaveAt: time.Now(),
+		relations:  make(map[uint32]pglogrepl.RelationMessageV2),
 		schemaManager: core.NewCachedSchemaManager(newSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
@@ -229,14 +231,18 @@ func (r *reader) handler(msg pgproto3.BackendMessage) error {
 	case *pgproto3.CopyData:
 		switch msg.Data[0] {
 		case pglogrepl.PrimaryKeepaliveMessageByteID:
+			now := time.Now()
 			ev, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
+			if now.Sub(r.lastSaveAt) > time.Duration(r.opt.Task.CDCDelayTime)*time.Minute {
+				r.lastSaveAt = now
+				r.latestLSN = ev.ServerWALEnd
+			}
 			if err == nil {
 				if r.lastEventAt == nil {
 					r.lastEventAt = new(time.Time)
 				}
 				if ev.ServerTime.Unix() != 0 {
 					*r.lastEventAt = ev.ServerTime
-					r.latestLSN = ev.ServerWALEnd
 				}
 			}
 			break

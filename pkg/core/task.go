@@ -430,20 +430,6 @@ func (s *Task) runTask(e Event) func() {
 }
 
 func (s *Task) Save() error {
-	task, err := model.GetTaskByID(s.state.Task.ID)
-	if err != nil {
-		return err
-	}
-	if task.CDCStatus != model.CDCStatusRunning {
-		return nil
-	}
-	now := time.Now()
-	if task.CDCDelayTime > 0 {
-		if now.Sub(s.lastSaveAt) < time.Duration(task.CDCDelayTime)*time.Minute {
-			return nil
-		}
-	}
-	s.lastSaveAt = now
 	if s.dumperRunning {
 		s.summary()
 		s.metric.flush(model.TaskModeDumper)

@@ -30,16 +30,18 @@ type reader struct {
 	retries        int
 	conn           *gorm.DB
 	lastEventAt    *time.Time
+	lastSaveAt     time.Time
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
 	c, cancel := context.WithCancel(ctx)
 	o := opt.(*core.ReaderOption)
 	return &reader{
-		ctx:    c,
-		cancel: cancel,
-		opt:    o,
-		done:   make(chan bool),
+		ctx:        c,
+		cancel:     cancel,
+		opt:        o,
+		lastSaveAt: time.Now(),
+		done:       make(chan bool),
 		schemaManager: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
@@ -159,9 +161,11 @@ func (r *reader) Start() error {
 			goto end
 		}
 		r.retries = 0
-		if event.Header.EventType == replication.XID_EVENT && now.Sub(lastSyncTime) > 10*time.Minute {
-			lastSyncTime = now
-			r.latestPosition = r.syncer.GetNextPosition()
+		if event.Header.EventType == replication.XID_EVENT {
+			if now.Sub(lastSyncTime) > (time.Duration(r.opt.Task.CDCDelayTime))*time.Minute {
+				lastSyncTime = now
+				r.latestPosition = r.syncer.GetNextPosition()
+			}
 			pt := time.Unix(int64(event.Header.Timestamp), 0)
 			r.lastEventAt = &pt
 		}

@@ -66,7 +66,7 @@ func (s *Runtime) save() {
 func (s *Runtime) StartSave() {
 	go (func() {
 		for {
-			time.Sleep(5 * time.Second)
+			time.Sleep(120 * time.Second)
 			s.save()
 		}
 	})()
