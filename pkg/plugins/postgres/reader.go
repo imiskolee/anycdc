@@ -319,7 +319,11 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 			return r.opt.Logger.Errorf("can not consume event %s", err)
 		}
 	}
-	r.latestLSN = xld.ServerWALEnd
+	now := time.Now()
+	if now.Sub(r.lastSaveAt) > time.Duration(r.opt.Task.CDCDelayTime)*time.Minute {
+		r.lastSaveAt = now
+		r.latestLSN = xld.ServerWALEnd
+	}
 	if r.lastEventAt == nil {
 		r.lastEventAt = new(time.Time)
 	}
