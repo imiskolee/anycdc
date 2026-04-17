@@ -29,6 +29,7 @@ type reader struct {
 	cancel          context.CancelFunc
 	replication     *replication
 	latestLSN       pglogrepl.LSN
+	latestRealLSN   pglogrepl.LSN
 	retries         int
 	relations       map[uint32]pglogrepl.RelationMessageV2
 	lastHeartBeatAt time.Time
@@ -142,6 +143,7 @@ func (r *reader) Start() error {
 		return r.opt.Logger.Errorf("can not start reader for task %s: %v", r.opt.Task.Name, err)
 	}
 	defer conn.Close(context.Background())
+	r.latestRealLSN = r.latestLSN
 	err = pglogrepl.StartReplication(
 		r.ctx,
 		conn.PgConn(),
@@ -176,11 +178,10 @@ func (r *reader) Start() error {
 		default:
 		}
 		if time.Now().Sub(r.lastHeartBeatAt) > 30*time.Second {
-			latestLSN := r.latestLSN
 			_ = pglogrepl.SendStandbyStatusUpdate(context.Background(),
 				conn.PgConn(),
 				pglogrepl.StandbyStatusUpdate{
-					WALWritePosition: latestLSN,
+					WALWritePosition: r.latestRealLSN,
 					ReplyRequested:   false,
 					ClientTime:       time.Now(),
 				})
@@ -238,6 +239,7 @@ func (r *reader) handler(msg pgproto3.BackendMessage) error {
 				r.latestLSN = ev.ServerWALEnd
 			}
 			if err == nil {
+				r.latestRealLSN = ev.ServerWALEnd
 				if r.lastEventAt == nil {
 					r.lastEventAt = new(time.Time)
 				}
@@ -324,6 +326,7 @@ func (r *reader) handleXLogData(msg *pgproto3.CopyData) error {
 		r.lastSaveAt = now
 		r.latestLSN = xld.ServerWALEnd
 	}
+	r.latestRealLSN = xld.ServerWALEnd
 	if r.lastEventAt == nil {
 		r.lastEventAt = new(time.Time)
 	}
