@@ -31,17 +31,19 @@ type reader struct {
 	conn           *gorm.DB
 	lastEventAt    *time.Time
 	lastSaveAt     time.Time
+	lastCompleteAt time.Time
 }
 
 func NewReader(ctx context.Context, opt interface{}) core.Reader {
 	c, cancel := context.WithCancel(ctx)
 	o := opt.(*core.ReaderOption)
 	return &reader{
-		ctx:        c,
-		cancel:     cancel,
-		opt:        o,
-		lastSaveAt: time.Now(),
-		done:       make(chan bool),
+		ctx:            c,
+		cancel:         cancel,
+		opt:            o,
+		lastSaveAt:     time.Now(),
+		lastCompleteAt: time.Now(),
+		done:           make(chan bool),
 		schemaManager: core.NewCachedSchemaManager(NewSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
@@ -161,8 +163,9 @@ func (r *reader) Start() error {
 			goto end
 		}
 		r.retries = 0
+		r.lastCompleteAt = time.Now()
 		if event.Header.EventType == replication.XID_EVENT {
-			if now.Sub(lastSyncTime) > (time.Duration(r.opt.Task.CDCDelayTime))*time.Minute {
+			if r.lastCompleteAt.Sub(lastSyncTime) > (time.Duration(r.opt.Task.CDCDelayTime))*time.Minute {
 				lastSyncTime = now
 				r.latestPosition = r.syncer.GetNextPosition()
 			}

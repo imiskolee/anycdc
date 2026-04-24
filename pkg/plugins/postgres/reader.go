@@ -35,6 +35,7 @@ type reader struct {
 	lastHeartBeatAt time.Time
 	lastEventAt     *time.Time
 	lastSaveAt      time.Time
+	lastCompletedAt time.Time
 	schemaManager   core.SchemaManager
 }
 
@@ -42,11 +43,12 @@ func newReader(ctx context.Context, opts interface{}) core.Reader {
 	c, cancel := context.WithCancel(ctx)
 	o := opts.(*core.ReaderOption)
 	reader := &reader{
-		ctx:        c,
-		cancel:     cancel,
-		opt:        o,
-		lastSaveAt: time.Now(),
-		relations:  make(map[uint32]pglogrepl.RelationMessageV2),
+		ctx:             c,
+		cancel:          cancel,
+		opt:             o,
+		lastSaveAt:      time.Now(),
+		lastCompletedAt: time.Now(),
+		relations:       make(map[uint32]pglogrepl.RelationMessageV2),
 		schemaManager: core.NewCachedSchemaManager(newSchema(ctx, &core.SchemaOption{
 			Connector: o.Connector,
 			Logger:    o.Logger,
@@ -206,10 +208,12 @@ func (r *reader) Start() error {
 			}
 			break
 		}
+
 		if loopError != nil {
 			goto end
 		}
 		r.retries = 0
+		r.lastCompletedAt = time.Now()
 	}
 end:
 	return loopError
@@ -234,7 +238,7 @@ func (r *reader) handler(msg pgproto3.BackendMessage) error {
 		case pglogrepl.PrimaryKeepaliveMessageByteID:
 			now := time.Now()
 			ev, err := pglogrepl.ParsePrimaryKeepaliveMessage(msg.Data[1:])
-			if now.Sub(r.lastSaveAt) > time.Duration(r.opt.Task.CDCDelayTime)*time.Minute {
+			if r.lastCompletedAt.Sub(r.lastSaveAt) > time.Duration(r.opt.Task.CDCDelayTime)*time.Minute {
 				r.lastSaveAt = now
 				r.latestLSN = ev.ServerWALEnd
 			}
