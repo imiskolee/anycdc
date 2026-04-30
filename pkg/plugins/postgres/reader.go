@@ -203,7 +203,7 @@ func (r *reader) Start() error {
 		for i := 0; i < 10; i++ {
 			if loopError = r.handler(msg); loopError != nil {
 				r.opt.Logger.Error("failed handler msg: %s", err)
-				time.Sleep(time.Duration(i+10) * time.Second)
+				time.Sleep(time.Duration(i+20) * time.Second)
 				continue
 			}
 			break

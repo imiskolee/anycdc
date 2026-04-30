@@ -154,7 +154,7 @@ func (r *reader) Start() error {
 			if err = r.handler(event); err != nil {
 				r.retries++
 				r.opt.Logger.Error("failed to handle event,%s", err.Error())
-				time.Sleep(time.Duration((i+1)*10) * time.Second)
+				time.Sleep(time.Duration((i+1)*20) * time.Second)
 				continue
 			}
 			break
