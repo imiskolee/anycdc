@@ -4,6 +4,7 @@ const (
 	ConnectorTypeMySQL     string = "mysql"
 	ConnectorTypePostgres  string = "postgres"
 	ConnectorTypeStarRocks string = "starrocks"
+	ConnectorTypeHTTP      string = "http"
 
 	ConnectorTargetTypeReader = "reader"
 	ConnectorTargetTypeWriter = "writer"

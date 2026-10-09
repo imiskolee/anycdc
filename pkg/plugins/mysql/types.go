@@ -61,7 +61,7 @@ func getBuiltType(typ string) (schemas.Type, schemas.SecondlyType) {
 		return schemas.TypeDate, schemas.SecondlyTypeUnknown
 	case ColumnTypeTime:
 		return schemas.TypeTime, schemas.SecondlyTypeUnknown
-	case ColumnTypeDateTime:
+	case ColumnTypeDateTime, ColumnTypeTimestamp:
 		return schemas.TypeTimestamp, schemas.SecondlyTypeUnknown
 	case ColumnTypeJSON:
 		return schemas.TypeJSON, schemas.SecondlyTypeUnknown

@@ -10,6 +10,7 @@ import (
 	"github.com/imiskolee/anycdc/pkg/core/schemas"
 	"gorm.io/gorm"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -89,7 +90,7 @@ func (r *reader) Prepare() error {
 		Password:             r.opt.Connector.Password,
 		Charset:              "utf8mb4",
 		ServerID:             uint32(extra.ServerID), // 伪从库 ID（必须唯一，不能与主库/其他从库重复）
-		Flavor:               "mariadb",              // 数据库类型（mysql/mariadb）
+		Flavor:               r.flavor(),             // 数据库类型（mysql/mariadb）
 		ParseTime:            true,
 		UseDecimal:           false,
 		MaxReconnectAttempts: 100,
@@ -111,12 +112,16 @@ func (r *reader) Start() error {
 	if latestPosition == "" {
 		latestPosition = r.LatestPosition().Position
 	}
-	if err := json.Unmarshal([]byte(r.opt.Task.LastCDCPosition), &r.latestPosition); err != nil {
+	if err := json.Unmarshal([]byte(latestPosition), &r.latestPosition); err != nil {
 		r.opt.Logger.Error("can not parse last cdc position: %v", err)
 		return err
 	}
 	startPosition := r.latestPosition
-	startPosition.Pos = 4
+	if startPosition.Pos < 4 {
+		// binlog 文件固定 4 字节起始头，兜底到文件头之后；否则使用保存的真实偏移续读，
+		// 避免每次重启都从当前文件开头重放已有事件。
+		startPosition.Pos = 4
+	}
 	streamer, err := r.syncer.StartSync(startPosition)
 	lastSyncTime := time.Now()
 	if err != nil {
@@ -192,20 +197,16 @@ func (r *reader) Stop() error {
 }
 
 func (r *reader) LatestPosition() core.ReaderPosition {
-	sql := "SHOW MASTER STATUS"
-	var ver string
-	if err := r.conn.Raw("SELECT VERSION()").Scan(&ver).Error; err != nil {
-		r.opt.Logger.Error("can not get latest master position: %v", err)
-		return core.ReaderPosition{}
-	}
-	if ver > "8.0.34" {
-		sql = "SHOW BINARY LOG STATUS"
-	}
 	var ret struct {
 		File     string `gorm:"column:file"`
 		Position uint32 `gorm:"column:position"`
 	}
-	if err := r.conn.Raw(sql).Find(&ret).Error; err != nil {
+	err := r.conn.Raw("SHOW MASTER STATUS").Find(&ret).Error
+	if err != nil {
+		// MySQL 8.4+ 已移除 SHOW MASTER STATUS，回退到 SHOW BINARY LOG STATUS
+		err = r.conn.Raw("SHOW BINARY LOG STATUS").Find(&ret).Error
+	}
+	if err != nil {
 		r.opt.Logger.Error("can not get latest master position: %v", err)
 		return core.ReaderPosition{}
 	}
@@ -251,45 +252,63 @@ func (r *reader) handler(e *replication.BinlogEvent) error {
 			return nil
 		}
 		table := r.schemaManager.Get(string(rowsEvent.Table.Schema), string(rowsEvent.Table.Table))
-		records := r.rowsToEntry(table, rowsEvent)
-		for _, record := range records {
-			var ev core.Event
-			ev.Record = record
-			ev.Record = record
-			ev.SourceSchema = *table
-			if e.Header.EventType == replication.UPDATE_ROWS_EVENTv0 ||
-				e.Header.EventType == replication.UPDATE_ROWS_EVENTv1 ||
-				e.Header.EventType == replication.UPDATE_ROWS_EVENTv2 {
-				ev.Type = core.EventTypeUpdate
-				ev.OldRecord = new(core.EventRecord)
-				*ev.OldRecord = ev.Record
-			} else {
-				ev.Type = core.EventTypeInsert
+		isUpdate := e.Header.EventType == replication.UPDATE_ROWS_EVENTv0 ||
+			e.Header.EventType == replication.UPDATE_ROWS_EVENTv1 ||
+			e.Header.EventType == replication.UPDATE_ROWS_EVENTv2
+		if isUpdate {
+			// binlog UPDATE 事件的 Rows 以 [前像, 后像] 成对出现，逐对生成一个事件
+			for i := 0; i+1 < len(rowsEvent.Rows); i += 2 {
+				before := r.decodeRow(table, rowsEvent.Rows[i])
+				after := r.decodeRow(table, rowsEvent.Rows[i+1])
+				ev := &core.Event{
+					SourceSchema: *table,
+					Type:         core.EventTypeUpdate,
+					Record:       after,
+					OldRecord:    &before,
+				}
+				pos, _ := json.Marshal(r.syncer.GetNextPosition())
+				ev.LastPOS = string(pos)
+				if err := r.opt.Subscriber.ReaderEvent(*ev); err != nil {
+					return err
+				}
 			}
-			pos, _ := json.Marshal(r.syncer.GetNextPosition())
-			ev.LastPOS = string(pos)
-			if err := r.opt.Subscriber.ReaderEvent(ev); err != nil {
-				return err
+		} else {
+			for _, row := range rowsEvent.Rows {
+				ev := &core.Event{
+					SourceSchema: *table,
+					Type:         core.EventTypeInsert,
+					Record:       r.decodeRow(table, row),
+				}
+				pos, _ := json.Marshal(r.syncer.GetNextPosition())
+				ev.LastPOS = string(pos)
+				if err := r.opt.Subscriber.ReaderEvent(*ev); err != nil {
+					return err
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func (s *reader) rowsToEntry(schema *schemas.Table, binlog *replication.RowsEvent) []core.EventRecord {
-	var records []core.EventRecord
-	for _, row := range binlog.Rows {
-		var record core.EventRecord
-		for idx, col := range row {
-			field, _ := schema.GetFieldByIndex(uint(idx))
-			td, err := dataTypes.Encode(field.DataType, col)
-			if err == nil {
-				record.Set(field.Name, td)
-			}
+// decodeRow 将 binlog 中的一行解码为 core.EventRecord。
+func (s *reader) decodeRow(schema *schemas.Table, row []interface{}) core.EventRecord {
+	var record core.EventRecord
+	for idx, col := range row {
+		field, _ := schema.GetFieldByIndex(uint(idx))
+		td, err := dataTypes.Encode(field.DataType, col)
+		if err == nil {
+			record.Set(field.Name, td)
 		}
-		records = append(records, record)
 	}
-	return records
+	return record
+}
+
+// flavor 根据连接器类型决定 binlog 解析的 dialect，MySQL 必须为 mysql，否则 GTID 事件与字符集识别错误。
+func (r *reader) flavor() string {
+	if strings.Contains(strings.ToLower(r.opt.Connector.Type), "mariadb") {
+		return "mariadb"
+	}
+	return "mysql"
 }
 
 func (s *reader) Release() error {
