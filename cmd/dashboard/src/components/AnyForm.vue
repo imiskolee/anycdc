@@ -10,10 +10,10 @@
       :wrapper-col="wrapperCol"
       id="form"
   >
-    <a-form-item v-for="item in metadata" :label="item.name" :name="item.name" :key="item.name">
-      <a-input v-if="item.type === 'string'" v-model:value="obj[item.name]" :disabled="item.readonly" :placeholder="item.placeholder"/>
-      <a-input v-if="item.type === 'number'" type="number" v-model:value.number="obj[item.name]"  :placeholder="item.placeholder" />
-      <a-textarea v-if="item.type === 'json'" style="min-height: 5em" v-model:value="obj[item.name]"  :placeholder="item.placeholder" ></a-textarea>
+    <a-form-item v-for="item in visible" :label="item.name" :name="item.name" :key="item.name">
+      <a-input v-if="item.type === 'string'" v-model:value="obj[item.name]" :disabled="item.readonly" :placeholder="ph(item)"/>
+      <a-input v-if="item.type === 'number'" type="number" v-model:value.number="obj[item.name]"  :placeholder="ph(item)" />
+      <a-textarea v-if="item.type === 'json'" style="min-height: 5em" v-model:value="obj[item.name]"  :placeholder="ph(item)" ></a-textarea>
 
       <a-select v-if="item.type === 'options' || item.type === 'dynamic_options'"
                 :mode="item.option_type"
@@ -21,6 +21,7 @@
         <a-select-option :value="option.value" v-for="option in item.options">{{option.name}}</a-select-option>
       </a-select>
       <a-switch v-if="item.type === 'switch'" v-model:checked="value[item.name]" />
+      <div v-if="item.tip && (!item.tipFor || item.tipFor.includes(obj.type))" class="field-tip" style="white-space: pre-wrap; font-size:12px; color:#888; margin-top:4px; line-height:1.5;">{{ item.tip }}</div>
     </a-form-item>
     <a-form-item>
       <div style="display: flex;justify-content: center">
@@ -34,7 +35,7 @@
 <script setup>
 
 import sdk from "../services/api.js"
-import {onMounted, reactive, ref} from "vue";
+import {onMounted, reactive, ref, computed} from "vue";
 
 const props = defineProps(
     {
@@ -48,6 +49,22 @@ const wrapperCol = { span: 16 }
 const metadata = ref((props.model.columns || []).filter((item)=>item.type))
 
 const obj = reactive(props.value)
+
+// 按当前 type 过滤掉 hideFor 中列出的、与本类型无关的字段；
+// visibleFor 则限定仅在某些类型下显示。
+const visible = computed(() =>
+    metadata.value.filter((item) => {
+      if (item.visibleFor && !item.visibleFor.includes(obj.type)) return false
+      if (item.hideFor && item.hideFor.includes(obj.type)) return false
+      return true
+    })
+)
+
+// 取占位符：支持按当前 type 指定(placeholderFor)，否则用通用 placeholder。
+function ph(item) {
+  if (item.placeholderFor && item.placeholderFor[obj.type]) return item.placeholderFor[obj.type]
+  return item.placeholder
+}
 
 onMounted(async ()=>{
   for(const key in metadata.value) {
